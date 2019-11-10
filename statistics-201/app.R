@@ -38,7 +38,17 @@ ui <- fluidPage(
                                  value = 1, min = 0, step = 1)
                 ),
                 hr(),
-                helpText("Hypothesis test")
+                # helpText("Hypothesis test:"),
+                numericInput("h0", "Null hypothesis \\(H_0 :\\mu = \\)",
+                             value = 0, step = 1),
+                radioButtons(
+                    inputId = "alternative",
+                    label = "Alternative",
+                    choices = c(
+                        "\\( \\neq \\)" = "two.sided",
+                        "\\( > \\)" = "greater",
+                        "\\( < \\)" = "less")
+                )
             ),
             hr(),
             sliderInput("alpha",
@@ -52,9 +62,9 @@ ui <- fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-           uiOutput("results_onemean"),
-           br(),
-           br()
+            uiOutput("results_onemean"),
+            br(),
+            br()
         )
     )
 )
@@ -87,15 +97,38 @@ server <- function(input, output) {
         if (anyNA(dat) | length(dat) < 2) {
             "Invalid input or not enough observations"
         } else if (input$inference == "one mean" & input$popsd_onemean == FALSE) {
-            test <- t.test(x = dat, conf.level = 1-input$alpha)
+            test_confint <- t.test(x = dat, mu = input$h0, alternative = "two.sided", conf.level = 1-input$alpha)
+            test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
             withMathJax(
                 paste(c("Your data:", paste(dat, collapse = ", ")), collapse = " "),
                 br(),
                 br(),
-                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\frac{s}{\\sqrt{n}} = \\)", " ",
-                       round(test$estimate, 3), "  \\( \\pm \\)", " ", "\\( ( \\)", round(qt(input$alpha/2, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr*sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\)", " ", "\\( = \\)", " ",
-                       "[", round(test$conf.int[1], 3), "; ", round(test$conf.int[2], 3), "]"),
-                br()
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\frac{s}{\\sqrt{n}} = \\) ",
+                       round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha/2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr*sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : \\mu = \\) ", test$null.value, " and \\(H_1 : \\mu \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(t_{obs} = \\tfrac{\\bar{x} - \\mu_0}{s / \\sqrt{n}} = \\) ",
+                       "(", round(test$estimate, 3), " - ", test$null.value, ") / ", round(test$stderr, 3), " \\( = \\) ",
+                       round(test$statistic, 3)),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm t_{\\alpha/2, n - 1} = \\pm t(\\)", ifelse(input$alternative == "greater", " \\( t_{\\alpha, n - 1} = t(\\)", " \\( -t_{\\alpha, n - 1} = -t(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), ", ", test$parameter, "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\) ", ifelse(input$alternative == "greater", "", "\\( - \\) ")), 
+                       ifelse(input$alternative == "two.sided", round(qt(input$alpha/2, df = test$parameter, lower.tail = FALSE), 3), round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "\\(RH_0\\)", "\\(NRH_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean is ", "we do not reject the null hypothesis that the true mean is "), test$null.value, ".")
             )
         } else {
             test <- t.test2(x = dat, V = input$sigma2_onemean, alpha = input$alpha)
@@ -103,35 +136,12 @@ server <- function(input, output) {
                 paste(c("Your data:", paste(dat, collapse = ", ")), collapse = " "),
                 br(),
                 br(),
-                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm z_{\\alpha/2} \\frac{\\sigma}{\\sqrt{n}} = \\)", " ",
-                       round(test$mean, 3), "  \\( \\pm \\)", " ", "\\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\)", " ", "\\( = \\)", " ",
-                       "[", round(test$LCL, 3), "; ", round(test$UCL, 3), "]"),
-                br()
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm z_{\\alpha/2} \\frac{\\sigma}{\\sqrt{n}} = \\) ",
+                       round(test$mean, 3), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test$LCL, 3), "; ", round(test$UCL, 3), "]")
             )
-        }
-    })
-    output$results2 <- renderUI({
-        
-        if (input$inference == "one mean") {
-            withMathJax(
-                #test <- t.test(x = as.numeric(input$sample_onemean)),
-                #print(test)
-                #paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\frac{s}{\\sqrt{n}} = \\)", " ", input$samplemean_onemean, " ", "\\( \\pm \\)", qt(input$alpha/2, df = input$n_onemean - 1, lower.tail = FALSE)),
-                #test <- t.test(x = rep(5, times = 10), mu = 0),
-                #print(test)
-            )
-        } else if (input$inference == "two means") {
-            print("two means")
-        } else if (input$inference == "one proportion") {
-            print("one proportion")
-        } else if (input$inference == "two proportions") {
-            print("two proportions")
-        } else if (input$inference == "one variance") {
-            print("one variance")
-        } else if (input$inference == "two variances") {
-            print("two variances")
-        } else {
-            print("in progress")
         }
     })
 }
