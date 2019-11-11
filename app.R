@@ -123,7 +123,7 @@ server <- function(input, output) {
                        ifelse(input$alternative == "two.sided", "\\( \\pm \\) ", ifelse(input$alternative == "greater", "", "\\( - \\) ")), 
                        ifelse(input$alternative == "two.sided", round(qt(input$alpha/2, df = test$parameter, lower.tail = FALSE), 3), round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3))),
                 br(),
-                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "\\(RH_0\\)", "\\(NRH_0\\)")),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
                 br(),
                 br(),
                 tags$b("Interpretation"),
