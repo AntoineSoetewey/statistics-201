@@ -58,7 +58,7 @@ ui <- fluidPage(
                     condition = "input.popsd_twomeans == 0",
                     radioButtons(
                         inputId = "var.equal",
-                        label = "Assume",
+                        label = "Assuming",
                         choices = c(
                             "\\( \\sigma^2_1 = \\sigma^2_2 \\)" = TRUE,
                             "\\( \\sigma^2_1 \\neq \\sigma^2_2 \\)" = FALSE)
@@ -191,7 +191,7 @@ server <- function(input, output) {
                 br(),
                 paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm t_{\\alpha/2, n - 1} = \\pm t(\\)", ifelse(input$alternative == "greater", " \\( t_{\\alpha, n - 1} = t(\\)", " \\( -t_{\\alpha, n - 1} = -t(\\)")),
                        ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), ", ", test$parameter, "\\()\\)", " \\( = \\) ",
-                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")), 
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
                        ifelse(input$alternative == "two.sided", round(qt(input$alpha/2, df = test$parameter, lower.tail = FALSE), 3), round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3))),
                 br(),
                 paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
