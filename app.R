@@ -35,18 +35,6 @@ ui <- fluidPage(
                     condition = "input.popsd_onemean == 1",
                     numericInput("sigma2_onemean", "\\(\\sigma^2 = \\)",
                                  value = 1, min = 0, step = 1)
-                ),
-                hr(),
-                # helpText("Hypothesis test:"),
-                numericInput("h0", "Null hypothesis \\(H_0 :\\mu = \\)",
-                             value = 0, step = 1),
-                radioButtons(
-                    inputId = "alternative",
-                    label = "Alternative",
-                    choices = c(
-                        "\\( \\neq \\)" = "two.sided",
-                        "\\( > \\)" = "greater",
-                        "\\( < \\)" = "less")
                 )
             ),
             conditionalPanel(
@@ -71,19 +59,43 @@ ui <- fluidPage(
                                  value = 1, min = 0, step = 1),
                     numericInput("sigma22_twomeans", "\\(\\sigma^2_2 = \\)",
                                  value = 1, min = 0, step = 1)
-                ),
-                hr(),
-                # helpText("Hypothesis test:"),
-                numericInput("h0", "Null hypothesis \\(H_0 :\\mu_1 - \\mu_2 = \\)",
-                             value = 0, step = 1),
-                radioButtons(
-                    inputId = "alternative",
-                    label = "Alternative",
-                    choices = c(
-                        "\\( \\neq \\)" = "two.sided",
-                        "\\( > \\)" = "greater",
-                        "\\( < \\)" = "less")
                 )
+            ),
+            hr(),
+            tags$b("Null hypothesis"),
+            conditionalPanel(
+                condition = "input.inference == 'one mean'",
+                sprintf("\\( H_0 : \\mu = \\)")
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two means'",
+                sprintf("\\( H_0 : \\mu_1 - \\mu_2 = \\)")
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'one proportion'",
+                sprintf("\\( H_0 : p = \\)")
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two proportions'",
+                sprintf("\\( H_0 : p_1 - p_2 = \\)")
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'one variance'",
+                sprintf("\\( H_0 : \\sigma^2 = \\)")
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two variances'",
+                sprintf("\\( H_0 : \\sigma^2_1 - \\sigma^2_2 = \\)")
+            ),
+            numericInput("h0", label = NULL,
+                         value = 0, step = 1),
+            radioButtons(
+                inputId = "alternative",
+                label = "Alternative",
+                choices = c(
+                    "\\( \\neq \\)" = "two.sided",
+                    "\\( > \\)" = "greater",
+                    "\\( < \\)" = "less")
             ),
             hr(),
             sliderInput("alpha",
@@ -287,9 +299,23 @@ server <- function(input, output) {
                 br(),
                 tags$b("Hypothesis test"),
                 br(),
+                paste0("1. \\(H_0 : \\mu_1 - \\mu_2 = \\) ", test$null.value, " and \\(H_1 : \\mu_1 - \\mu_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(t_{obs} = \\tfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{s_p \\sqrt{\\frac{1}{n_1} + \\frac{1}{n_2}}} = \\) ",
+                       "(", round(test$estimate, 3), " - ", test$null.value, ") / (", round(s_p, 3), " * ", round(sqrt((1/length(dat1))+(1/length(dat2))), 3), ") \\( = \\) ",
+                       round(test$statistic, 3)),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm t_{\\alpha/2, n_1 + n_2 - 2} = \\pm t(\\)", ifelse(input$alternative == "greater", " \\( t_{\\alpha, n_1 + n_2 - 2} = t(\\)", " \\( -t_{\\alpha, n_1 + n_2 - 2} = -t(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), ", ", test$parameter, "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")), 
+                       ifelse(input$alternative == "two.sided", round(qt(input$alpha/2, df = test$parameter, lower.tail = FALSE), 3), round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
                 br(),
                 tags$b("Interpretation"),
-                br()
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean is ", "we do not reject the null hypothesis that the true mean is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
             )
         } else if (input$inference == "two means" & input$popsd_twomeans == FALSE & input$var.equal == FALSE) {
             print("two means with unequal variances")
