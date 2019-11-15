@@ -25,7 +25,7 @@ ui <- fluidPage(
                 label = "Inference for:",
                 choices = c("one mean", "two means", "one proportion", "two proportions", "one variance", "two variances"),
                 multiple = FALSE,
-                selected = "one mean"),
+                selected = "one proportion"),
             hr(),
             conditionalPanel(
                 condition = "input.inference == 'one mean'",
@@ -41,7 +41,7 @@ ui <- fluidPage(
             conditionalPanel(
                 condition = "input.inference == 'two means'",
                 textInput("sample1_twomeans", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-                textInput("sample2_twomeans", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, -0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+                textInput("sample2_twomeans", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
                 hr(),
                 conditionalPanel(
                     condition = "input.popsd_twomeans == 0",
@@ -60,6 +60,33 @@ ui <- fluidPage(
                                  value = 1, min = 0, step = 1),
                     numericInput("sigma22_twomeans", "\\(\\sigma^2_2 = \\)",
                                  value = 1, min = 0, step = 1)
+                )
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'one proportion'",
+                tags$b("Sample size"),
+                numericInput("n_oneprop", "\\(n = \\)",
+                             value = 30, min = 0, step = 1),
+                hr(),
+                radioButtons(
+                    inputId = "propx_oneprop",
+                    label = NULL,
+                    choices = c(
+                        "Proportion of success \\(\\hat{p}\\)" = "prop_true",
+                        "Number of successes \\(x\\)" = "prop_false"
+                    )
+                ),
+                conditionalPanel(
+                    condition = "input.propx_oneprop == 'prop_true'",
+                    tags$b("Proportion of success"),
+                    numericInput("p_oneprop", "\\(\\hat{p} = \\)",
+                                 value = 0.2, min = 0, max = 1, step = 0.01)
+                ),
+                conditionalPanel(
+                    condition = "input.propx_oneprop == 'prop_false'",
+                    tags$b("Number of successes"),
+                    numericInput("x_oneprop", "\\(x = \\)",
+                                 value = 10, min = 0, step = 1)
                 )
             ),
             hr(),
@@ -119,11 +146,11 @@ ui <- fluidPage(
             ),
             conditionalPanel(
                 condition = "input.inference == 'one proportion'",
-                uiOutput("results_oneproportion")
+                uiOutput("results_oneprop")
             ),
             conditionalPanel(
                 condition = "input.inference == 'two proportions'",
-                uiOutput("results_twoproportions")
+                uiOutput("results_twoprop")
             ),
             conditionalPanel(
                 condition = "input.inference == 'one variance'",
@@ -199,6 +226,28 @@ server <- function(input, output) {
         #               alpha, UCL))
         return(value)
     }
+    prop.z.test <- function(x,n,p0=0.5,conf.level=0.95,alternative="two.sided") {
+        ts.z <- NULL
+        cint <- NULL
+        p.val <- NULL
+        phat <- x/n
+        qhat <- 1 - phat
+        # If you have p0 from the population or H0, use it.
+        # Otherwise, use phat and qhat to find SE.phat:
+        SE.phat <- sqrt((phat*qhat)/n) 
+        ts.z <- (phat - p0)/SE.phat
+        p.val <- if (alternative == "two.sided") {
+            2*pnorm(abs(ts.z), lower.tail = FALSE)
+        } else if (alternative == "less") {
+            pnorm(ts.z, lower.tail = TRUE)
+        } else {
+            pnorm(ts.z, lower.tail = FALSE)
+        }
+        cint <- phat + c( 
+            -1*((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat),
+            ((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat) )
+        return(list(x=x,n=n,estimate=phat,null.value=p0,stderr=SE.phat,statistic=ts.z,p.value=p.val,conf.int=cint))
+    }
     
     output$results_onemean <- renderUI({
         dat <- extract(input$sample_onemean)
@@ -219,7 +268,7 @@ server <- function(input, output) {
                 br(),
                 tags$b("Confidence interval"),
                 br(),
-                paste0((1-input$alpha)*100, "% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\frac{s}{\\sqrt{n}} = \\) ",
+                paste0((1-input$alpha)*100, "% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ",
                        round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha/2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr*sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ",
                        "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
                 br(),
@@ -228,7 +277,7 @@ server <- function(input, output) {
                 br(),
                 paste0("1. \\(H_0 : \\mu = \\) ", test$null.value, " and \\(H_1 : \\mu \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
                 br(),
-                paste0("2. Test statistic : \\(t_{obs} = \\tfrac{\\bar{x} - \\mu_0}{s / \\sqrt{n}} = \\) ",
+                paste0("2. Test statistic : \\(t_{obs} = \\dfrac{\\bar{x} - \\mu_0}{s / \\sqrt{n}} = \\) ",
                        "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
                        round(test$statistic, 3)),
                 br(),
@@ -259,7 +308,7 @@ server <- function(input, output) {
                 br(),
                 tags$b("Confidence interval"),
                 br(),
-                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm z_{\\alpha/2} \\frac{\\sigma}{\\sqrt{n}} = \\) ",
+                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm z_{\\alpha/2} \\dfrac{\\sigma}{\\sqrt{n}} = \\) ",
                        round(test$mean, 3), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ",
                        "[", round(test$LCL, 3), "; ", round(test$UCL, 3), "]"),
                 br(),
@@ -268,7 +317,7 @@ server <- function(input, output) {
                 br(),
                 paste0("1. \\(H_0 : \\mu = \\) ", input$h0, " and \\(H_1 : \\mu \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), input$h0),
                 br(),
-                paste0("2. Test statistic : \\(z_{obs} = \\tfrac{\\bar{x} - \\mu_0}{\\sigma / \\sqrt{n}} = \\) ",
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{\\bar{x} - \\mu_0}{\\sigma / \\sqrt{n}} = \\) ",
                        "(", round(test$mean, 3), ifelse(input$h0 >= 0, paste0(" - ", input$h0), paste0(" + ", abs(input$h0))), ") / ", round(test$sigma / sqrt(length(dat)), 3), " \\( = \\) ",
                        round(test$statistic, 3)),
                 br(),
@@ -285,7 +334,7 @@ server <- function(input, output) {
                 paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean is ", "we do not reject the null hypothesis that the true mean is "), input$h0, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
             )
         } else {
-            print("in progress")
+            print("loading...")
         }
     })
     
@@ -320,9 +369,9 @@ server <- function(input, output) {
                 br(),
                 tags$b("Confidence interval"),
                 br(),
-                paste0((1-input$alpha)*100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, n_1 + n_2 - 2} (s_p) \\sqrt{\\frac{1}{n_1} + \\frac{1}{n_2}} \\)"),
+                paste0((1-input$alpha)*100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, n_1 + n_2 - 2} (s_p) \\sqrt{\\dfrac{1}{n_1} + \\dfrac{1}{n_2}} \\)"),
                 br(),
-                paste0("where ", "\\( s_p = \\sqrt{\\frac{(n_1 - 1)s^2_1 + (n_2 - 1)s^2_2}{n_1 + n_2 - 2}} = \\) ", round(s_p, 3)),
+                paste0("where ", "\\( s_p = \\sqrt{\\dfrac{(n_1 - 1)s^2_1 + (n_2 - 1)s^2_2}{n_1 + n_2 - 2}} = \\) ", round(s_p, 3)),
                 br(),
                 br(),
                 paste0("\\( \\Rightarrow \\)", (1-input$alpha)*100, "% CI for \\(\\mu_1 - \\mu_2 = \\) ", round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)" , round(qt(input$alpha/2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1/length(dat1) + 1/length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ",
@@ -333,7 +382,7 @@ server <- function(input, output) {
                 br(),
                 paste0("1. \\(H_0 : \\mu_1 - \\mu_2 = \\) ", test$null.value, " and \\(H_1 : \\mu_1 - \\mu_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
                 br(),
-                paste0("2. Test statistic : \\(t_{obs} = \\tfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{s_p \\sqrt{\\frac{1}{n_1} + \\frac{1}{n_2}}} = \\) ",
+                paste0("2. Test statistic : \\(t_{obs} = \\dfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{s_p \\sqrt{\\dfrac{1}{n_1} + \\dfrac{1}{n_2}}} = \\) ",
                        "(", round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / (", round(s_p, 3), " * ", round(sqrt((1/length(dat1))+(1/length(dat2))), 3), ") \\( = \\) ",
                        round(test$statistic, 3)),
                 br(),
@@ -374,9 +423,9 @@ server <- function(input, output) {
                 br(),
                 tags$b("Confidence interval"),
                 br(),
-                paste0((1-input$alpha)*100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, \\nu} \\sqrt{\\frac{s^2_1}{n_1} + \\frac{s^2_2}{n_2}} \\)"),
+                paste0((1-input$alpha)*100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, \\nu} \\sqrt{\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}} \\)"),
                 br(),
-                paste0("where ", "\\( \\nu = \\frac{\\Big(\\frac{s^2_1}{n_1} + \\frac{s^2_2}{n_2}\\Big)^2}{\\frac{\\Big(\\frac{s^2_1}{n_1}\\Big)^2}{n_1-1} + \\frac{\\Big(\\frac{s^2_2}{n_2}\\Big)^2}{n_2-1}} = \\) ", round(test$parameter, 3)),
+                paste0("where ", "\\( \\nu = \\dfrac{\\Bigg(\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}\\Bigg)^2}{\\dfrac{\\Bigg(\\dfrac{s^2_1}{n_1}\\Bigg)^2}{n_1-1} + \\dfrac{\\Bigg(\\dfrac{s^2_2}{n_2}\\Bigg)^2}{n_2-1}} = \\) ", round(test$parameter, 3)),
                 br(),
                 br(),
                 paste0("\\( \\Rightarrow \\)", (1-input$alpha)*100, "% CI for \\(\\mu_1 - \\mu_2 = \\) ", round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)" , round(qt(input$alpha/2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
@@ -387,7 +436,7 @@ server <- function(input, output) {
                 br(),
                 paste0("1. \\(H_0 : \\mu_1 - \\mu_2 = \\) ", test$null.value, " and \\(H_1 : \\mu_1 - \\mu_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
                 br(),
-                paste0("2. Test statistic : \\(t_{obs} = \\tfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{\\sqrt{\\frac{s^2_1}{n_1} + \\frac{s^2_2}{n_2}}} = \\) ",
+                paste0("2. Test statistic : \\(t_{obs} = \\dfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{\\sqrt{\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}}} = \\) ",
                        "(", round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
                        round(test$statistic, 3)),
                 br(),
@@ -427,7 +476,7 @@ server <- function(input, output) {
                 br(),
                 tags$b("Confidence interval"),
                 br(),
-                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm z_{\\alpha/2} \\sqrt{\\frac{\\sigma^2_1}{n_1} + \\frac{\\sigma^2_2}{n_2}} = \\) ",
+                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\sigma^2_1}{n_1} + \\dfrac{\\sigma^2_2}{n_2}} = \\) ",
                        round(test$mean1, 3), ifelse(test$mean2 >= 0, paste0(" - ", round(test$mean2, 3)), paste0(" + ", round(abs(test$mean2), 3))), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test$S, 3), "\\( ) \\) ", "\\( = \\) ",
                        "[", round(test$LCL, 3), "; ", round(test$UCL, 3), "]"),
                 br(),
@@ -436,7 +485,7 @@ server <- function(input, output) {
                 br(),
                 paste0("1. \\(H_0 : \\mu_1 - \\mu_2 = \\) ", input$h0, " and \\(H_1 : \\mu_1 - \\mu_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), input$h0),
                 br(),
-                paste0("2. Test statistic : \\(z_{obs} = \\tfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{\\sqrt{\\frac{\\sigma^2_1}{n_1} + \\frac{\\sigma^2_2}{n_2}}} = \\) ",
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{\\sqrt{\\dfrac{\\sigma^2_1}{n_1} + \\dfrac{\\sigma^2_2}{n_2}}} = \\) ",
                        "(", round(test$mean1, 3), ifelse(test$mean2 >= 0, paste0(" - ", round(test$mean2, 3)), paste0(" + ", round(abs(test$mean2), 3))), ifelse(input$h0 >= 0, paste0(" - ", input$h0), paste0(" + ", abs(input$h0))), ") / ", round(test$S, 3), " \\( = \\) ",
                        round(test$statistic, 3)),
                 br(),
@@ -453,18 +502,122 @@ server <- function(input, output) {
                 paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in means is ", "we do not reject the null hypothesis that the true difference in means is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
             )
         } else {
-            print("in progress")
+            print("loading...")
+        }
+    })
+    
+    output$results_oneprop <- renderUI({
+        if (input$inference == "one proportion" & input$propx_oneprop == "prop_true") {
+            test <- prop.z.test(x = input$n_oneprop*input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative)
+            test_confint <- prop.z.test(x = input$n_oneprop*input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = "two.sided")
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste0("\\(n =\\) ", round(test$n, 3)),
+                br(),
+                paste0("\\(\\hat{p} =\\) ", round(test$estimate, 3)),
+                br(),
+                paste0("\\(\\hat{q} = 1 - \\hat{p} =\\) ", round(1-test$estimate, 3)),
+                br(),
+                helpText(paste0("\\( n\\hat{p} = \\) ", round(test$n*test$estimate, 3), " and \\( n(1-\\hat{p}) = \\) ", round(test$n*(1-test$estimate), 3))),
+                helpText(paste0("Assumptions \\( n\\hat{p} \\geq 5\\) and \\( n(1-\\hat{p}) \\geq 5\\)", ifelse(test$n*test$estimate >= 5 & test$n*(1-test$estimate) >= 5, " are met.", " are not met."))),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(p = \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} = \\) ",
+                       round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}} = \\) ",
+                       "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
+                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), " \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                       ifelse(input$alternative == "two.sided", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else if (input$inference == "one proportion" & input$propx_oneprop == "prop_false") {
+            test <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative)
+            test_confint <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = "two.sided")
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste0("\\(n =\\) ", round(test$n, 3)),
+                br(),
+                paste0("\\(\\hat{p} = \\dfrac{x}{n} = \\) ", test$x, " \\( / \\) ", test$n, " \\( = \\) ", round(test$estimate, 3)),
+                br(),
+                paste0("\\(\\hat{q} = 1 - \\hat{p} = \\) ", round(1-test$estimate, 3)),
+                br(),
+                helpText(paste0("\\( n\\hat{p} = \\) ", round(test$n*test$estimate, 3), " and \\( n(1-\\hat{p}) = \\) ", round(test$n*(1-test$estimate), 3))),
+                helpText(paste0("Assumptions \\( n\\hat{p} \\geq 5\\) and \\( n(1-\\hat{p}) \\geq 5\\)", ifelse(test$n*test$estimate >= 5 & test$n*(1-test$estimate) >= 5, " are met.", " are not met."))),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(p = \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} = \\) ",
+                       round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}} = \\) ",
+                       "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
+                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), " \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                       ifelse(input$alternative == "two.sided", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else {
+            print("loading...")
         }
     })
     
     output$plot <- renderPlot({
-        if (input$inference == "one mean" & input$popsd_onemean == FALSE & input$alternative == "two.sided") {
+        if (input$inference == "one mean" & input$popsd_onemean == FALSE) {
             dat <- extract(input$sample_onemean)
             test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
-            funcShaded <- function(x) {
-                y <- dt(x, df = test$parameter)
-                y[x < qt(input$alpha/2, df = test$parameter, lower.tail = FALSE) & x > qt(input$alpha/2, df = test$parameter) ] <- NA
-                return(y)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha/2, df = test$parameter, lower.tail = FALSE) & x > qt(input$alpha/2, df = test$parameter) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha, df = test$parameter, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x > qt(input$alpha, df = test$parameter, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
             }
             p <- ggplot(data.frame(x = c(qt(0.999, df = test$parameter, lower.tail = FALSE), qt(0.999, df = test$parameter, lower.tail = TRUE))), aes(x = x)) +
                 stat_function(fun = dt, args = list(df = test$parameter)) +
@@ -472,56 +625,33 @@ server <- function(input, output) {
                 theme_minimal() +
                 geom_vline(xintercept = test$statistic, color = "steelblue") +
                 geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
-                ggtitle(paste0("Student distribution", " t(", test$parameter, ")")) +
+                ggtitle(paste0("Student distribution", " t(", round(test$parameter, 3), ")")) +
                 theme(plot.title = element_text(face="bold", hjust = 0.5)) +
                 ylab("Density") +
                 xlab("x")
             p
-        } else if (input$inference == "one mean" & input$popsd_onemean == FALSE & input$alternative == "greater") {
-            dat <- extract(input$sample_onemean)
-            test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
-            funcShaded <- function(x) {
-                y <- dt(x, df = test$parameter)
-                y[x < qt(input$alpha, df = test$parameter, lower.tail = FALSE) ] <- NA
-                return(y)
-            }
-            p <- ggplot(data.frame(x = c(qt(0.999, df = test$parameter, lower.tail = FALSE), qt(0.999, df = test$parameter, lower.tail = TRUE))), aes(x = x)) +
-                stat_function(fun = dt, args = list(df = test$parameter)) +
-                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
-                theme_minimal() +
-                geom_vline(xintercept = test$statistic, color = "steelblue") +
-                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
-                ggtitle(paste0("Student distribution", " t(", test$parameter, ")")) +
-                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
-                ylab("Density") +
-                xlab("x")
-            p
-        } else if (input$inference == "one mean" & input$popsd_onemean == FALSE & input$alternative == "less") {
-            dat <- extract(input$sample_onemean)
-            test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
-            funcShaded <- function(x) {
-                y <- dt(x, df = test$parameter)
-                y[x > qt(input$alpha, df = test$parameter, lower.tail = TRUE) ] <- NA
-                return(y)
-            }
-            p <- ggplot(data.frame(x = c(qt(0.999, df = test$parameter, lower.tail = FALSE), qt(0.999, df = test$parameter, lower.tail = TRUE))), aes(x = x)) +
-                stat_function(fun = dt, args = list(df = test$parameter)) +
-                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
-                theme_minimal() +
-                geom_vline(xintercept = test$statistic, color = "steelblue") +
-                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
-                ggtitle(paste0("Student distribution", " t(", test$parameter, ")")) +
-                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
-                ylab("Density") +
-                xlab("x")
-            p
-        } else if (input$inference == "one mean" & input$popsd_onemean == TRUE & input$alternative == "two.sided") {
+        
+        } else if (input$inference == "one mean" & input$popsd_onemean == TRUE) {
             dat <- extract(input$sample_onemean)
             test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
-            funcShaded <- function(x) {
-                y <- dnorm(x, mean = 0, sd = 1)
-                y[x < qnorm(input$alpha/2, mean = 0, sd = 1, lower.tail = FALSE) & x > qnorm(input$alpha/2, mean = 0, sd = 1) ] <- NA
-                return(y)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha/2, mean = 0, sd = 1, lower.tail = FALSE) & x > qnorm(input$alpha/2, mean = 0, sd = 1) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha, mean = 0, sd = 1, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x > qnorm(input$alpha, mean = 0, sd = 1, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
             }
             p <- ggplot(data.frame(x = c(qnorm(0.999, mean=0, sd = 1, lower.tail = FALSE), qnorm(0.999, mean=0, sd = 1, lower.tail = TRUE))), aes(x = x)) +
                 stat_function(fun = dnorm, args = list(mean=0, sd = 1)) +
@@ -534,13 +664,97 @@ server <- function(input, output) {
                 ylab("Density") +
                 xlab("x")
             p
-        } else if (input$inference == "one mean" & input$popsd_onemean == TRUE & input$alternative == "greater") {
-            dat <- extract(input$sample_onemean)
-            test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
-            funcShaded <- function(x) {
-                y <- dnorm(x, mean = 0, sd = 1)
-                y[x < qnorm(input$alpha, mean = 0, sd = 1, lower.tail = FALSE) ] <- NA
-                return(y)
+            
+        } else if (input$inference == "two means" & input$popsd_twomeans == FALSE & input$var.equal == TRUE) {
+            dat1 <- extract(input$sample1_twomeans)
+            dat2 <- extract(input$sample2_twomeans)
+            test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha, paired = FALSE, var.equal = TRUE)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha/2, df = test$parameter, lower.tail = FALSE) & x > qt(input$alpha/2, df = test$parameter) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha, df = test$parameter, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x > qt(input$alpha, df = test$parameter, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
+            }
+            p <- ggplot(data.frame(x = c(qt(0.999, df = test$parameter, lower.tail = FALSE), qt(0.999, df = test$parameter, lower.tail = TRUE))), aes(x = x)) +
+                stat_function(fun = dt, args = list(df = test$parameter)) +
+                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
+                theme_minimal() +
+                geom_vline(xintercept = test$statistic, color = "steelblue") +
+                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
+                ggtitle(paste0("Student distribution", " t(", round(test$parameter, 3), ")")) +
+                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+                ylab("Density") +
+                xlab("x")
+            p
+        } else if (input$inference == "two means" & input$popsd_twomeans == FALSE & input$var.equal == FALSE) {
+            dat1 <- extract(input$sample1_twomeans)
+            dat2 <- extract(input$sample2_twomeans)
+            test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha, paired = FALSE, var.equal = FALSE)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha/2, df = test$parameter, lower.tail = FALSE) & x > qt(input$alpha/2, df = test$parameter) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha, df = test$parameter, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x > qt(input$alpha, df = test$parameter, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
+            }
+            p <- ggplot(data.frame(x = c(qt(0.999, df = test$parameter, lower.tail = FALSE), qt(0.999, df = test$parameter, lower.tail = TRUE))), aes(x = x)) +
+                stat_function(fun = dt, args = list(df = test$parameter)) +
+                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
+                theme_minimal() +
+                geom_vline(xintercept = test$statistic, color = "steelblue") +
+                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
+                ggtitle(paste0("Student distribution", " t(", round(test$parameter, 3), ")")) +
+                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+                ylab("Density") +
+                xlab("x")
+            p
+        } else if (input$inference == "two means" & input$popsd_twomeans == TRUE) {
+            dat1 <- extract(input$sample1_twomeans)
+            dat2 <- extract(input$sample2_twomeans)
+            test <- t.test3(x = dat1, y = dat2, V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha/2, mean = 0, sd = 1, lower.tail = FALSE) & x > qnorm(input$alpha/2, mean = 0, sd = 1) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha, mean = 0, sd = 1, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x > qnorm(input$alpha, mean = 0, sd = 1, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
             }
             p <- ggplot(data.frame(x = c(qnorm(0.999, mean=0, sd = 1, lower.tail = FALSE), qnorm(0.999, mean=0, sd = 1, lower.tail = TRUE))), aes(x = x)) +
                 stat_function(fun = dnorm, args = list(mean=0, sd = 1)) +
@@ -553,13 +767,31 @@ server <- function(input, output) {
                 ylab("Density") +
                 xlab("x")
             p
-        } else if (input$inference == "one mean" & input$popsd_onemean == TRUE & input$alternative == "less") {
-            dat <- extract(input$sample_onemean)
-            test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
-            funcShaded <- function(x) {
-                y <- dnorm(x, mean = 0, sd = 1)
-                y[x > qnorm(input$alpha, mean = 0, sd = 1, lower.tail = TRUE) ] <- NA
-                return(y)
+            
+        } else if (input$inference == "one proportion") {
+            if (input$propx_oneprop == "prop_true") {
+                test <- prop.z.test(x = input$n_oneprop*input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative)
+            } else {
+                test <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative)
+            }
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha/2, mean = 0, sd = 1, lower.tail = FALSE) & x > qnorm(input$alpha/2, mean = 0, sd = 1) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha, mean = 0, sd = 1, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x > qnorm(input$alpha, mean = 0, sd = 1, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
             }
             p <- ggplot(data.frame(x = c(qnorm(0.999, mean=0, sd = 1, lower.tail = FALSE), qnorm(0.999, mean=0, sd = 1, lower.tail = TRUE))), aes(x = x)) +
                 stat_function(fun = dnorm, args = list(mean=0, sd = 1)) +
@@ -573,7 +805,7 @@ server <- function(input, output) {
                 xlab("x")
             p
         } else {
-            print("in progress")
+            print("loading...")
         }
     })
 }
