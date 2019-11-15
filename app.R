@@ -25,7 +25,7 @@ ui <- fluidPage(
                 label = "Inference for:",
                 choices = c("one mean", "two means", "one proportion", "two proportions", "one variance", "two variances"),
                 multiple = FALSE,
-                selected = "one proportion"),
+                selected = "two proportions"),
             hr(),
             conditionalPanel(
                 condition = "input.inference == 'one mean'",
@@ -89,6 +89,40 @@ ui <- fluidPage(
                                  value = 10, min = 0, step = 1)
                 )
             ),
+            conditionalPanel(
+                condition = "input.inference == 'two proportions'",
+                tags$b("Sample size 1"),
+                numericInput("n1_twoprop", "\\(n_1 = \\)",
+                             value = 30, min = 0, step = 1),
+                tags$b("Sample size 2"),
+                numericInput("n2_twoprop", "\\(n_2 = \\)",
+                             value = 30, min = 0, step = 1),
+                hr(),
+                radioButtons(
+                    inputId = "propx_twoprop",
+                    label = NULL,
+                    choices = c(
+                        "Proportion of success \\(\\hat{p}\\)" = "prop_true",
+                        "Number of successes \\(x\\)" = "prop_false"
+                    )
+                ),
+                conditionalPanel(
+                    condition = "input.propx_twoprop == 'prop_true'",
+                    tags$b("Proportion of success"),
+                    numericInput("p1_twoprop", "\\(\\hat{p}_1 = \\)",
+                                 value = 0.2, min = 0, max = 1, step = 0.01),
+                    numericInput("p2_twoprop", "\\(\\hat{p}_2 = \\)",
+                                 value = 0.3, min = 0, max = 1, step = 0.01)
+                ),
+                conditionalPanel(
+                    condition = "input.propx_twoprop == 'prop_false'",
+                    tags$b("Number of successes"),
+                    numericInput("x1_twoprop", "\\(x_1 = \\)",
+                                 value = 10, min = 0, step = 1),
+                    numericInput("x2_twoprop", "\\(x_2 = \\)",
+                                 value = 12, min = 0, step = 1)
+                )
+            ),
             hr(),
             tags$b("Null hypothesis"),
             conditionalPanel(
@@ -117,6 +151,10 @@ ui <- fluidPage(
             ),
             numericInput("h0", label = NULL,
                          value = 0, step = 1),
+            conditionalPanel(
+                condition = "input.inference == 'two proportions' && input.h0 == 0",
+                checkboxInput("pooledstderr_twoprop", "Use pooled standard error", FALSE)
+            ),
             radioButtons(
                 inputId = "alternative",
                 label = "Alternative",
@@ -232,8 +270,6 @@ server <- function(input, output) {
         p.val <- NULL
         phat <- x/n
         qhat <- 1 - phat
-        # If you have p0 from the population or H0, use it.
-        # Otherwise, use phat and qhat to find SE.phat:
         SE.phat <- sqrt((phat*qhat)/n) 
         ts.z <- (phat - p0)/SE.phat
         p.val <- if (alternative == "two.sided") {
@@ -247,6 +283,34 @@ server <- function(input, output) {
             -1*((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat),
             ((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat) )
         return(list(x=x,n=n,estimate=phat,null.value=p0,stderr=SE.phat,statistic=ts.z,p.value=p.val,conf.int=cint))
+    }
+    prop.z.test2 <- function(x1,x2,n1,n2,p0=0,pooled.stderr=TRUE,conf.level=0.95,alternative="two.sided") {
+        ts.z <- NULL
+        cint <- NULL
+        p.val <- NULL
+        phat1 <- x1/n1
+        qhat1 <- 1 - phat1
+        phat2 <- x2/n2
+        qhat2 <- 1 - phat2
+        pooled.phat <- ((n1*phat1) + (n2*phat2))/(n1+n2)
+        pooled.qhat <- 1-pooled.phat
+        if (pooled.stderr == FALSE) {
+            SE.phat <- sqrt((phat1*qhat1)/n1 + (phat2*qhat2)/n2) 
+        } else {
+            SE.phat <- sqrt(pooled.phat*pooled.qhat*(1/n1 + 1/n2))
+        }
+        ts.z <- (phat1 - phat2 - p0)/SE.phat
+        p.val <- if (alternative == "two.sided") {
+            2*pnorm(abs(ts.z), lower.tail = FALSE)
+        } else if (alternative == "less") {
+            pnorm(ts.z, lower.tail = TRUE)
+        } else {
+            pnorm(ts.z, lower.tail = FALSE)
+        }
+        cint <- (phat1 - phat2) + c( 
+            -1*((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat),
+            ((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat) )
+        return(list(x1=x1,x2=x2,n1=n1,n2=n2,estimate1=phat1,estimate2=phat2,null.value=p0,stderr=SE.phat,statistic=ts.z,p.value=p.val,conf.int=cint))
     }
     
     output$results_onemean <- renderUI({
@@ -591,6 +655,16 @@ server <- function(input, output) {
                 br(),
                 paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
             )
+        } else {
+            print("loading...")
+        }
+    })
+    
+    output$results_twoprop <- renderUI({
+        if (input$inference == "two proportions" & input$propx_twoprop == "prop_true") {
+            print("two prop with p1 and p2")
+        } else if (input$inference == "two proportions" & input$propx_twoprop == "prop_false") {
+            print("two prop with x1 and x2")
         } else {
             print("loading...")
         }
