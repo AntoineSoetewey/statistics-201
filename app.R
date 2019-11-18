@@ -9,6 +9,7 @@
 
 library(shiny)
 library(ggplot2)
+library(EnvStats)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -25,7 +26,7 @@ ui <- fluidPage(
                 label = "Inference for:",
                 choices = c("one mean", "two means", "one proportion", "two proportions", "one variance", "two variances"),
                 multiple = FALSE,
-                selected = "two proportions"),
+                selected = "one variance"),
             hr(),
             conditionalPanel(
                 condition = "input.inference == 'one mean'",
@@ -123,6 +124,10 @@ ui <- fluidPage(
                                  value = 12, min = 0, step = 1)
                 )
             ),
+            conditionalPanel(
+                condition = "input.inference == 'one variance'",
+                textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc."),
+            ),
             hr(),
             tags$b("Null hypothesis"),
             conditionalPanel(
@@ -150,7 +155,7 @@ ui <- fluidPage(
                 sprintf("\\( H_0 : \\sigma^2_1 - \\sigma^2_2 = \\)")
             ),
             numericInput("h0", label = NULL,
-                         value = 0, step = 1),
+                         value = 0.1, step = 0.1),
             conditionalPanel(
                 condition = "input.inference == 'two proportions'",
                 checkboxInput("pooledstderr_twoprop", "Use pooled standard error", FALSE)
@@ -192,11 +197,11 @@ ui <- fluidPage(
             ),
             conditionalPanel(
                 condition = "input.inference == 'one variance'",
-                uiOutput("results_onevariance")
+                uiOutput("results_onevar")
             ),
             conditionalPanel(
                 condition = "input.inference == 'two variances'",
-                uiOutput("results_twovariances")
+                uiOutput("results_twovar")
             ),
             br(),
             br(),
@@ -870,6 +875,74 @@ server <- function(input, output) {
         }
     })
     
+    output$results_onevar <- renderUI({
+        dat <- extract(input$sample_onevar)
+        if (anyNA(dat) | length(dat) < 2) {
+            "Invalid input or not enough observations"
+        } else if (input$h0 <= 0) {
+            withMathJax(
+                sprintf("\\( \\sigma^2_0 \\) must be > 0")
+            )
+        } else if (input$inference == "one variance") {
+            test_confint <- varTest(x = dat, sigma.squared = input$h0, alternative = "two.sided", conf.level = 1-input$alpha)
+            test <- varTest(x = dat, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
+            withMathJax(
+                paste(c("Your data:", paste(dat, collapse = ", ")), collapse = " "),
+                br(),
+                paste0("\\(n =\\) ", length(dat)),
+                br(),
+                paste0("\\(s^2 =\\) ", round(var(dat), 3)),
+                br(),
+                paste0("\\(s =\\) ", round(sd(dat), 3)),
+                br(),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ",
+                      "[(", round((length(dat) - 1)*test$estimate, 3), " / ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = FALSE),3), ") ; (", round((length(dat) - 1)*test$estimate, 3), " / ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = TRUE),3), ")] = ",
+                      "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : \\sigma^2 = \\) ", test$null.value, " and \\(H_1 : \\sigma^2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(\\chi^2_{obs} = \\dfrac{(n-1)s^2}{\\sigma^2_0} = \\) ",
+                       "[(", length(dat), " - 1) * ", round(test$estimate, 3), "] / ", test$null.value, " \\( = \\) ",
+                       round(test$statistic, 3)),
+                br(),
+                if (input$alternative == "two.sided") {
+                    withMathJax(
+                        paste0("3. Critical values : \\( \\chi^2_{1-\\alpha/2, n - 1} \\) and \\( \\chi^2_{\\alpha/2, n - 1} =\\) "),
+                        paste0("\\( \\chi^2 \\)(", 1-input$alpha/2, ", ", test$parameters, ") and \\( \\chi^2 \\)(", input$alpha/2, ", ", test$parameters, ") = "),
+                        paste0(round(qchisq(1-input$alpha/2, df = test$parameters, lower.tail = FALSE), 3), " and ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = FALSE), 3))
+                    )
+                } else if (input$alternative == "greater") {
+                    withMathJax(
+                        paste0("3. Critical value : \\( \\chi^2_{\\alpha, n - 1} =\\) "),
+                        paste0("\\( \\chi^2 \\)(", input$alpha, ", ", test$parameters, ") = "),
+                        paste0(round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3))
+                    )
+                } else {
+                    withMathJax(
+                        paste0("3. Critical value : \\( \\chi^2_{1-\\alpha, n - 1} =\\) "),
+                        paste0("\\( \\chi^2 \\)(", 1-input$alpha, ", ", test$parameters, ") = "),
+                        paste0(round(qchisq(1-input$alpha, df = test$parameters, lower.tail = FALSE), 3))
+                    )
+                },
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true variance is equal to ", "we do not reject the null hypothesis that the true variance is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else {
+            print("loading...")
+        }
+    })
+    
     output$plot <- renderPlot({
         if (input$inference == "one mean" & input$popsd_onemean == FALSE) {
             dat <- extract(input$sample_onemean)
@@ -1114,6 +1187,39 @@ server <- function(input, output) {
                 geom_vline(xintercept = test$statistic, color = "steelblue") +
                 geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
                 ggtitle(paste0("Normal distribution N(0,1)")) +
+                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+                ylab("Density") +
+                xlab("x")
+            p
+        } else if (input$inference == "one variance") {
+            dat <- extract(input$sample_onevar)
+            test <- varTest(x = dat, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dchisq(x, df = test$parameters)
+                    y[x > qchisq(1-input$alpha/2, df = test$parameters, lower.tail = FALSE) & x < qchisq(1-input$alpha/2, df = test$parameters, lower.tail = TRUE)] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dchisq(x, df = test$parameters)
+                    y[x < qchisq(input$alpha, df = test$parameters, lower.tail = FALSE)] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dchisq(x, df = test$parameters)
+                    y[x > qchisq(1-input$alpha, df = test$parameters, lower.tail = FALSE)] <- NA
+                    return(y)
+                }
+            }
+            p <- ggplot(data.frame(x = c(0, qchisq(0.999, df = test$parameters, lower.tail = TRUE))), aes(x = x)) +
+                stat_function(fun = dchisq, args = list(df = test$parameters)) +
+                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
+                theme_minimal() +
+                geom_vline(xintercept = test$statistic, color = "steelblue") +
+                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.025), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
+                ggtitle("Chi-square distribution") +
                 theme(plot.title = element_text(face="bold", hjust = 0.5)) +
                 ylab("Density") +
                 xlab("x")
