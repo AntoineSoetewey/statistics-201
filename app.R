@@ -152,7 +152,7 @@ ui <- fluidPage(
             numericInput("h0", label = NULL,
                          value = 0, step = 1),
             conditionalPanel(
-                condition = "input.inference == 'two proportions' && input.h0 == 0",
+                condition = "input.inference == 'two proportions'",
                 checkboxInput("pooledstderr_twoprop", "Use pooled standard error", FALSE)
             ),
             radioButtons(
@@ -310,7 +310,7 @@ server <- function(input, output) {
         cint <- (phat1 - phat2) + c( 
             -1*((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat),
             ((qnorm(((1 - conf.level)/2) + conf.level))*SE.phat) )
-        return(list(x1=x1,x2=x2,n1=n1,n2=n2,estimate1=phat1,estimate2=phat2,null.value=p0,stderr=SE.phat,statistic=ts.z,p.value=p.val,conf.int=cint))
+        return(list(x1=x1,x2=x2,n1=n1,n2=n2,estimate1=phat1,estimate2=phat2,null.value=p0,stderr=SE.phat,pooled.phat=pooled.phat,statistic=ts.z,p.value=p.val,conf.int=cint))
     }
     
     output$results_onemean <- renderUI({
@@ -599,7 +599,7 @@ server <- function(input, output) {
                 br(),
                 paste0("2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}} = \\) ",
                        "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), " \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
                 br(),
                 paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
                        ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
@@ -641,7 +641,7 @@ server <- function(input, output) {
                 br(),
                 paste0("2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}} = \\) ",
                        "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), " \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
                 br(),
                 paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
                        ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
@@ -661,10 +661,210 @@ server <- function(input, output) {
     })
     
     output$results_twoprop <- renderUI({
-        if (input$inference == "two proportions" & input$propx_twoprop == "prop_true") {
-            print("two prop with p1 and p2")
-        } else if (input$inference == "two proportions" & input$propx_twoprop == "prop_false") {
-            print("two prop with x1 and x2")
+        if (input$inference == "two proportions" & input$propx_twoprop == "prop_true" & input$pooledstderr_twoprop == FALSE) {
+            test <- prop.z.test2(x1 = input$n1_twoprop*input$p1_twoprop, x2 = input$n2_twoprop*input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=FALSE)
+            test_confint <- prop.z.test2(x1 = input$n1_twoprop*input$p1_twoprop, x2 = input$n2_twoprop*input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = "two.sided", pooled.stderr=FALSE)
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste0("\\(n_1 =\\) ", round(test$n1, 3)),
+                br(),
+                paste0("\\(n_1 =\\) ", round(test$n2, 3)),
+                br(),
+                paste0("\\(\\hat{p}_1 =\\) ", round(test$estimate1, 3)),
+                br(),
+                paste0("\\(\\hat{p}_2 =\\) ", round(test$estimate2, 3)),
+                br(),
+                paste0("\\(\\hat{q}_1 = 1 - \\hat{p}_1 =\\) ", round(1-test$estimate1, 3)),
+                br(),
+                paste0("\\(\\hat{q}_2 = 1 - \\hat{p}_2 =\\) ", round(1-test$estimate2, 3)),
+                br(),
+                helpText(paste0("\\( n_1\\hat{p}_1 = \\) ", round(test$n1*test$estimate1, 3), " and \\( n_1(1-\\hat{p}_1) = \\) ", round(test$n1*(1-test$estimate1), 3))),
+                helpText(paste0("\\( n_2\\hat{p}_2 = \\) ", round(test$n2*test$estimate2, 3), " and \\( n_2(1-\\hat{p}_2) = \\) ", round(test$n2*(1-test$estimate2), 3))),
+                helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1*test$estimate1 >= 5 & test$n1*(1-test$estimate1) >= 5 & test$n2*test$estimate2 >= 5 & test$n2*(1-test$estimate2) >= 5, " are met.", " are not met."))),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
+                       round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+                       "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
+                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                       ifelse(input$alternative == "two.sided", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in proportions is ", "we do not reject the null hypothesis that the true difference in proportions is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else if (input$inference == "two proportions" & input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == FALSE) {
+            test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=FALSE)
+            test_confint <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = "two.sided", pooled.stderr=FALSE)
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste0("\\(n_1 =\\) ", round(test$n1, 3)),
+                br(),
+                paste0("\\(n_1 =\\) ", round(test$n2, 3)),
+                br(),
+                paste0("\\(\\hat{p}_1 = \\dfrac{x_1}{n_1} = \\) ", test$x1, " \\( / \\) ", test$n1, " \\( = \\) ", round(test$estimate1, 3)),
+                br(),
+                paste0("\\(\\hat{p}_2 = \\dfrac{x_2}{n_2} = \\) ", test$x2, " \\( / \\) ", test$n2, " \\( = \\) ", round(test$estimate2, 3)),
+                br(),
+                paste0("\\(\\hat{q}_1 = 1 - \\hat{p}_1 =\\) ", round(1-test$estimate1, 3)),
+                br(),
+                paste0("\\(\\hat{q}_2 = 1 - \\hat{p}_2 =\\) ", round(1-test$estimate2, 3)),
+                br(),
+                helpText(paste0("\\( n_1\\hat{p}_1 = \\) ", round(test$n1*test$estimate1, 3), " and \\( n_1(1-\\hat{p}_1) = \\) ", round(test$n1*(1-test$estimate1), 3))),
+                helpText(paste0("\\( n_2\\hat{p}_2 = \\) ", round(test$n2*test$estimate2, 3), " and \\( n_2(1-\\hat{p}_2) = \\) ", round(test$n2*(1-test$estimate2), 3))),
+                helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1*test$estimate1 >= 5 & test$n1*(1-test$estimate1) >= 5 & test$n2*test$estimate2 >= 5 & test$n2*(1-test$estimate2) >= 5, " are met.", " are not met."))),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
+                       round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+                       "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
+                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                       ifelse(input$alternative == "two.sided", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in proportions is ", "we do not reject the null hypothesis that the true difference in proportions is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else if (input$inference == "two proportions" & input$propx_twoprop == "prop_true" & input$pooledstderr_twoprop == TRUE) {
+                test <- prop.z.test2(x1 = input$n1_twoprop*input$p1_twoprop, x2 = input$n2_twoprop*input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=TRUE)
+                test_confint <- prop.z.test2(x1 = input$n1_twoprop*input$p1_twoprop, x2 = input$n2_twoprop*input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = "two.sided", pooled.stderr=FALSE)
+                withMathJax(
+                    paste("Your data:"),
+                    br(),
+                    paste0("\\(n_1 =\\) ", round(test$n1, 3)),
+                    br(),
+                    paste0("\\(n_1 =\\) ", round(test$n2, 3)),
+                    br(),
+                    paste0("\\(\\hat{p}_1 =\\) ", round(test$estimate1, 3)),
+                    br(),
+                    paste0("\\(\\hat{p}_2 =\\) ", round(test$estimate2, 3)),
+                    br(),
+                    paste0("\\(\\hat{q}_1 = 1 - \\hat{p}_1 =\\) ", round(1-test$estimate1, 3)),
+                    br(),
+                    paste0("\\(\\hat{q}_2 = 1 - \\hat{p}_2 =\\) ", round(1-test$estimate2, 3)),
+                    br(),
+                    helpText(paste0("\\( n_1\\hat{p}_1 = \\) ", round(test$n1*test$estimate1, 3), " and \\( n_1(1-\\hat{p}_1) = \\) ", round(test$n1*(1-test$estimate1), 3))),
+                    helpText(paste0("\\( n_2\\hat{p}_2 = \\) ", round(test$n2*test$estimate2, 3), " and \\( n_2(1-\\hat{p}_2) = \\) ", round(test$n2*(1-test$estimate2), 3))),
+                    helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1*test$estimate1 >= 5 & test$n1*(1-test$estimate1) >= 5 & test$n2*test$estimate2 >= 5 & test$n2*(1-test$estimate2) >= 5, " are met.", " are not met."))),
+                    br(),
+                    tags$b("Confidence interval"),
+                    br(),
+                    paste0((1-input$alpha)*100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
+                           round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
+                           "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                    br(),
+                    br(),
+                    tags$b("Hypothesis test"),
+                    br(),
+                    paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                    br(),
+                    paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} \\) "),
+                    br(),
+                    paste0("where ", "\\( \\hat{p} = \\dfrac{n_1 \\hat{p}_1 + n_2 + \\hat{p}_2}{n_1 + n_2} = \\) ", "(", test$n1, " * ", round(test$estimate1, 3), " + ", test$n2, " * ", round(test$estimate2,3), ") / (", test$n1, " + ", test$n2, ") = ", round(test$pooled.phat, 3)),
+                    br(),
+                    paste0("\\( \\Rightarrow z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+                           "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
+                           ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                    br(),
+                    paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
+                           ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
+                           ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                           ifelse(input$alternative == "two.sided", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))),
+                    br(),
+                    paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                    br(),
+                    br(),
+                    tags$b("Interpretation"),
+                    br(),
+                    paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in proportions is ", "we do not reject the null hypothesis that the true difference in proportions is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+                )
+        } else if (input$inference == "two proportions" & input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == TRUE) {
+            test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=TRUE)
+            test_confint <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = "two.sided", pooled.stderr=FALSE)
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste0("\\(n_1 =\\) ", round(test$n1, 3)),
+                br(),
+                paste0("\\(n_1 =\\) ", round(test$n2, 3)),
+                br(),
+                paste0("\\(\\hat{p}_1 = \\dfrac{x_1}{n_1} = \\) ", test$x1, " \\( / \\) ", test$n1, " \\( = \\) ", round(test$estimate1, 3)),
+                br(),
+                paste0("\\(\\hat{p}_2 = \\dfrac{x_2}{n_2} = \\) ", test$x2, " \\( / \\) ", test$n2, " \\( = \\) ", round(test$estimate2, 3)),
+                br(),
+                paste0("\\(\\hat{q}_1 = 1 - \\hat{p}_1 =\\) ", round(1-test$estimate1, 3)),
+                br(),
+                paste0("\\(\\hat{q}_2 = 1 - \\hat{p}_2 =\\) ", round(1-test$estimate2, 3)),
+                br(),
+                helpText(paste0("\\( n_1\\hat{p}_1 = \\) ", round(test$n1*test$estimate1, 3), " and \\( n_1(1-\\hat{p}_1) = \\) ", round(test$n1*(1-test$estimate1), 3))),
+                helpText(paste0("\\( n_2\\hat{p}_2 = \\) ", round(test$n2*test$estimate2, 3), " and \\( n_2(1-\\hat{p}_2) = \\) ", round(test$n2*(1-test$estimate2), 3))),
+                helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1*test$estimate1 >= 5 & test$n1*(1-test$estimate1) >= 5 & test$n2*test$estimate2 >= 5 & test$n2*(1-test$estimate2) >= 5, " are met.", " are not met."))),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
+                       round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} \\) "),
+                br(),
+                paste0("where ", "\\( \\hat{p} = \\dfrac{n_1 \\hat{p}_1 + n_2 + \\hat{p}_2}{n_1 + n_2} = \\) ", "(", test$n1, " * ", round(test$estimate1, 3), " + ", test$n2, " * ", round(test$estimate2,3), ") / (", test$n1, " + ", test$n2, ") = ", round(test$pooled.phat, 3)),
+                br(),
+                paste0("\\( \\Rightarrow z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+                       "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
+                       ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                       ifelse(input$alternative == "two.sided", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in proportions is ", "we do not reject the null hypothesis that the true difference in proportions is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
         } else {
             print("loading...")
         }
@@ -847,6 +1047,46 @@ server <- function(input, output) {
                 test <- prop.z.test(x = input$n_oneprop*input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative)
             } else {
                 test <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative)
+            }
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha/2, mean = 0, sd = 1, lower.tail = FALSE) & x > qnorm(input$alpha/2, mean = 0, sd = 1) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha, mean = 0, sd = 1, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x > qnorm(input$alpha, mean = 0, sd = 1, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
+            }
+            p <- ggplot(data.frame(x = c(qnorm(0.999, mean=0, sd = 1, lower.tail = FALSE), qnorm(0.999, mean=0, sd = 1, lower.tail = TRUE))), aes(x = x)) +
+                stat_function(fun = dnorm, args = list(mean=0, sd = 1)) +
+                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
+                theme_minimal() +
+                geom_vline(xintercept = test$statistic, color = "steelblue") +
+                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
+                ggtitle(paste0("Normal distribution N(0,1)")) +
+                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+                ylab("Density") +
+                xlab("x")
+            p
+        } else if (input$inference == "two proportions") {
+            if (input$propx_twoprop == "prop_true" & input$pooledstderr_twoprop == FALSE) {
+                test <- prop.z.test2(x1 = input$n1_twoprop*input$p1_twoprop, x2 = input$n2_twoprop*input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=FALSE)
+            } else if (input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == FALSE) {
+                test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=FALSE)
+            } else if (input$propx_twoprop == "prop_true" & input$pooledstderr_twoprop == TRUE) {
+                test <- prop.z.test2(x1 = input$n1_twoprop*input$p1_twoprop, x2 = input$n2_twoprop*input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=TRUE)
+            } else if (input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == TRUE) {
+                test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1-input$alpha, alternative = input$alternative, pooled.stderr=TRUE)
             }
             if (input$alternative == "two.sided") {
                 funcShaded <- function(x) {
