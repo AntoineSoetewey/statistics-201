@@ -126,12 +126,12 @@ ui <- fluidPage(
             ),
             conditionalPanel(
                 condition = "input.inference == 'one variance'",
-                textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc."),
+                textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc.")
             ),
             conditionalPanel(
                 condition = "input.inference == 'two variances'",
                 textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-                textInput("sample2_twovar", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+                textInput("sample2_twovar", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
             ),
             hr(),
             tags$b("Null hypothesis"),
@@ -185,7 +185,8 @@ ui <- fluidPage(
                         "Significance level \\(\\alpha = \\)",
                         min = 0.01,
                         max = 0.20,
-                        value = 0.05),
+                        value = 0.05
+                        ),
             hr(),
             HTML('<p>Report a <a href="https://github.com/AntoineSoetewey/statistics-201/issues">bug</a> or view the <a href="https://github.com/AntoineSoetewey/statistics-201/blob/master/app.R">code</a>. Back to <a href="https://www.antoinesoetewey.com/">www.antoinesoetewey.com</a>.</p>')
         ),
