@@ -1014,6 +1014,9 @@ server <- function(input, output) {
                 paste0("2. Test statistic : \\(F_{obs} = \\dfrac{s^2_1}{s^2_2} = \\) ",
                        "[", round(var(dat1), 3), " / ", round(var(dat2), 3), "]", " \\( = \\) ",
                        round(test$statistic, 3)),
+                # paste0("2. Test statistic : \\(F_{obs} = \\dfrac{max(s^2_1, s^2_2)}{min(s^2_1, s^2_2)} = \\) ",
+                #        "[", round(max(c(var(dat1), var(dat2))), 3), " / ", round(min(c(var(dat1), var(dat2))), 3), "]", " \\( = \\) ",
+                #        round(max(c(var(dat1), var(dat2)))/min(c(var(dat1), var(dat2))), 3)),
                 br(),
                 if (input$alternative == "two.sided") {
                     withMathJax(
