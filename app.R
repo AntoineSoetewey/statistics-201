@@ -157,10 +157,17 @@ ui <- fluidPage(
             ),
             conditionalPanel(
                 condition = "input.inference == 'two variances'",
-                sprintf("\\( H_0 : \\sigma^2_1 - \\sigma^2_2 = \\)")
+                sprintf("\\( H_0 : \\sigma^2_1 = \\sigma^2_2 \\)")
             ),
-            numericInput("h0", label = NULL,
-                         value = 0.1, step = 0.1),
+            conditionalPanel(
+                condition = "input.inference != 'two variances'",
+                numericInput("h0", label = NULL,
+                             value = 0.1, step = 0.1)
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two variances'",
+                br()
+            ),
             conditionalPanel(
                 condition = "input.inference == 'two proportions'",
                 checkboxInput("pooledstderr_twoprop", "Use pooled standard error", FALSE)
@@ -959,7 +966,7 @@ server <- function(input, output) {
             )
         } else if (input$inference == "two variances") {
             test_confint <- var.test(x = dat1, y = dat2, ratio = 1, alternative = "two.sided", conf.level = 1-input$alpha)
-            test <- var.test(x = dat1, y = dat2, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
+            test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative, conf.level = 1-input$alpha)
             withMathJax(
                 paste("Your data:"),
                 br(),
@@ -982,38 +989,51 @@ server <- function(input, output) {
                 br(),
                 tags$b("Confidence interval"),
                 br(),
-                # paste0((1-input$alpha)*100, "% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ",
-                #        "[(", round((length(dat) - 1)*test$estimate, 3), " / ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = FALSE),3), ") ; (", round((length(dat) - 1)*test$estimate, 3), " / ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = TRUE),3), ")] = ",
-                #        "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                paste0((1-input$alpha)*100, "% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha/2, n_1 - 1, n_2-1} \\Bigg] = \\) ",
+                       "\\( \\big[ \\)", round(test_confint$estimate, 3), " * (1 / ", round(qf(input$alpha/2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE),3), "); ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha/2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE),3), "\\( \\big] = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
                 br(),
                 br(),
                 tags$b("Hypothesis test"),
                 br(),
-                # paste0("1. \\(H_0 : \\sigma^2 = \\) ", test$null.value, " and \\(H_1 : \\sigma^2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
-                # br(),
-                # paste0("2. Test statistic : \\(\\chi^2_{obs} = \\dfrac{(n-1)s^2}{\\sigma^2_0} = \\) ",
-                #        "[(", length(dat), " - 1) * ", round(test$estimate, 3), "] / ", test$null.value, " \\( = \\) ",
-                #        round(test$statistic, 3)),
+                if (test$alternative == "two.sided") {
+                    withMathJax(
+                        paste0("1. \\(H_0 : \\sigma^2_1 = \\sigma^2_2 \\) and \\(H_1 : \\sigma^2_1 \\neq \\sigma^2_2 \\) ")
+                    )
+                } else if (test$alternative == "greater") {
+                    withMathJax(
+                        paste0("1. \\(H_0 : \\sigma^2_1 = \\sigma^2_2 \\) and \\(H_1 : \\sigma^2_1 > \\sigma^2_2 \\) ")
+                    )
+                } else {
+                    withMathJax(
+                        paste0("1. \\(H_0 : \\sigma^2_1 = \\sigma^2_2 \\) and \\(H_1 : \\sigma^2_1 < \\sigma^2_2 \\) ")
+                    )
+                },
                 br(),
-                # if (input$alternative == "two.sided") {
-                #     withMathJax(
-                #         paste0("3. Critical values : \\( \\chi^2_{1-\\alpha/2, n - 1} \\) and \\( \\chi^2_{\\alpha/2, n - 1} =\\) "),
-                #         paste0("\\( \\chi^2 \\)(", 1-input$alpha/2, ", ", test$parameters, ") and \\( \\chi^2 \\)(", input$alpha/2, ", ", test$parameters, ") = "),
-                #         paste0(round(qchisq(1-input$alpha/2, df = test$parameters, lower.tail = FALSE), 3), " and ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = FALSE), 3))
-                #     )
-                # } else if (input$alternative == "greater") {
-                #     withMathJax(
-                #         paste0("3. Critical value : \\( \\chi^2_{\\alpha, n - 1} =\\) "),
-                #         paste0("\\( \\chi^2 \\)(", input$alpha, ", ", test$parameters, ") = "),
-                #         paste0(round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3))
-                #     )
-                # } else {
-                #     withMathJax(
-                #         paste0("3. Critical value : \\( \\chi^2_{1-\\alpha, n - 1} =\\) "),
-                #         paste0("\\( \\chi^2 \\)(", 1-input$alpha, ", ", test$parameters, ") = "),
-                #         paste0(round(qchisq(1-input$alpha, df = test$parameters, lower.tail = FALSE), 3))
-                #     )
-                # },
+                paste0("2. Test statistic : \\(F_{obs} = \\dfrac{s^2_1}{s^2_2} = \\) ",
+                       "[", round(var(dat1), 3), " / ", round(var(dat2), 3), "]", " \\( = \\) ",
+                       round(test$statistic, 3)),
+                br(),
+                if (input$alternative == "two.sided") {
+                    withMathJax(
+                        paste0("3. Critical values : \\( F_{1-\\alpha/2, n_1 - 1, n_2-1} \\) and \\( F_{\\alpha/2, n_1 - 1, n_2-1} =\\) "),
+                        paste0("\\( \\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} \\) and \\( F_{\\alpha/2, n_1 - 1, n_2-1} =\\) "),
+                        paste0("\\( 1/F \\)(", input$alpha/2, ", ", test$parameter[1], ", ", test$parameter[2], ") and \\( F \\)(", input$alpha/2, ", ", test$parameter[1], ", ", test$parameter[2], ") = "),
+                        paste0(round(qf(input$alpha/2, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = TRUE), 3), " and ", round(qf(input$alpha/2, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = FALSE), 3))
+                    )
+                } else if (input$alternative == "greater") {
+                    # withMathJax(
+                    #     paste0("3. Critical value : \\( \\chi^2_{\\alpha, n - 1} =\\) "),
+                    #     paste0("\\( \\chi^2 \\)(", input$alpha, ", ", test$parameters, ") = "),
+                    #     paste0(round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3))
+                    # )
+                } else {
+                    # withMathJax(
+                    #     paste0("3. Critical value : \\( \\chi^2_{1-\\alpha, n - 1} =\\) "),
+                    #     paste0("\\( \\chi^2 \\)(", 1-input$alpha, ", ", test$parameters, ") = "),
+                    #     paste0(round(qchisq(1-input$alpha, df = test$parameters, lower.tail = FALSE), 3))
+                    # )
+                },
                 br(),
                 # paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
                 br(),
