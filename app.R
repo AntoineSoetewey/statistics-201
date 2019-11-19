@@ -26,7 +26,7 @@ ui <- fluidPage(
                 label = "Inference for:",
                 choices = c("one mean", "two means", "one proportion", "two proportions", "one variance", "two variances"),
                 multiple = FALSE,
-                selected = "one variance"),
+                selected = "two variances"),
             hr(),
             conditionalPanel(
                 condition = "input.inference == 'one mean'",
@@ -127,6 +127,11 @@ ui <- fluidPage(
             conditionalPanel(
                 condition = "input.inference == 'one variance'",
                 textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc."),
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two variances'",
+                textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+                textInput("sample2_twovar", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
             ),
             hr(),
             tags$b("Null hypothesis"),
@@ -937,6 +942,85 @@ server <- function(input, output) {
                 tags$b("Interpretation"),
                 br(),
                 paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true variance is equal to ", "we do not reject the null hypothesis that the true variance is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else {
+            print("loading...")
+        }
+    })
+    
+    output$results_twovar <- renderUI({
+        dat1 <- extract(input$sample1_twovar)
+        dat2 <- extract(input$sample2_twovar)
+        if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) {
+            "Invalid input or not enough observations"
+        } else if (input$h0 <= 0) {
+            withMathJax(
+                sprintf("\\( \\sigma^2_1 - \\sigma^2_2 \\) must be > 0")
+            )
+        } else if (input$inference == "two variances") {
+            test_confint <- var.test(x = dat1, y = dat2, ratio = 1, alternative = "two.sided", conf.level = 1-input$alpha)
+            test <- var.test(x = dat1, y = dat2, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1-input$alpha)
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+                br(),
+                paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+                br(),
+                paste0("\\(n_1 =\\) ", length(dat1)),
+                br(),
+                paste0("\\(n_2 =\\) ", length(dat2)),
+                br(),
+                paste0("\\(s^2_1 =\\) ", round(var(dat1), 3)),
+                br(),
+                paste0("\\(s^2_2 =\\) ", round(var(dat2), 3)),
+                br(),
+                paste0("\\(s_1 =\\) ", round(sd(dat1), 3)),
+                br(),
+                paste0("\\(s_2 =\\) ", round(sd(dat2), 3)),
+                br(),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                # paste0((1-input$alpha)*100, "% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ",
+                #        "[(", round((length(dat) - 1)*test$estimate, 3), " / ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = FALSE),3), ") ; (", round((length(dat) - 1)*test$estimate, 3), " / ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = TRUE),3), ")] = ",
+                #        "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                # paste0("1. \\(H_0 : \\sigma^2 = \\) ", test$null.value, " and \\(H_1 : \\sigma^2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                # br(),
+                # paste0("2. Test statistic : \\(\\chi^2_{obs} = \\dfrac{(n-1)s^2}{\\sigma^2_0} = \\) ",
+                #        "[(", length(dat), " - 1) * ", round(test$estimate, 3), "] / ", test$null.value, " \\( = \\) ",
+                #        round(test$statistic, 3)),
+                br(),
+                # if (input$alternative == "two.sided") {
+                #     withMathJax(
+                #         paste0("3. Critical values : \\( \\chi^2_{1-\\alpha/2, n - 1} \\) and \\( \\chi^2_{\\alpha/2, n - 1} =\\) "),
+                #         paste0("\\( \\chi^2 \\)(", 1-input$alpha/2, ", ", test$parameters, ") and \\( \\chi^2 \\)(", input$alpha/2, ", ", test$parameters, ") = "),
+                #         paste0(round(qchisq(1-input$alpha/2, df = test$parameters, lower.tail = FALSE), 3), " and ", round(qchisq(input$alpha/2, df = test$parameters, lower.tail = FALSE), 3))
+                #     )
+                # } else if (input$alternative == "greater") {
+                #     withMathJax(
+                #         paste0("3. Critical value : \\( \\chi^2_{\\alpha, n - 1} =\\) "),
+                #         paste0("\\( \\chi^2 \\)(", input$alpha, ", ", test$parameters, ") = "),
+                #         paste0(round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3))
+                #     )
+                # } else {
+                #     withMathJax(
+                #         paste0("3. Critical value : \\( \\chi^2_{1-\\alpha, n - 1} =\\) "),
+                #         paste0("\\( \\chi^2 \\)(", 1-input$alpha, ", ", test$parameters, ") = "),
+                #         paste0(round(qchisq(1-input$alpha, df = test$parameters, lower.tail = FALSE), 3))
+                #     )
+                # },
+                br(),
+                # paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br()
+                # paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true variance is equal to ", "we do not reject the null hypothesis that the true variance is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
             )
         } else {
             print("loading...")
