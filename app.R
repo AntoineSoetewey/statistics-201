@@ -172,13 +172,27 @@ ui <- fluidPage(
                 condition = "input.inference == 'two proportions'",
                 checkboxInput("pooledstderr_twoprop", "Use pooled standard error", FALSE)
             ),
-            radioButtons(
-                inputId = "alternative",
-                label = "Alternative",
-                choices = c(
-                    "\\( \\neq \\)" = "two.sided",
-                    "\\( > \\)" = "greater",
-                    "\\( < \\)" = "less")
+            conditionalPanel(
+                condition = "input.inference != 'two variances'",
+                radioButtons(
+                    inputId = "alternative",
+                    label = "Alternative",
+                    choices = c(
+                        "\\( \\neq \\)" = "two.sided",
+                        "\\( > \\)" = "greater",
+                        "\\( < \\)" = "less")
+                )
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two variances'",
+                radioButtons(
+                    inputId = "alternative_twovar",
+                    label = "Alternative",
+                    choices = c(
+                        "\\( \\sigma^2_1 \\neq \\sigma^2_2 \\)" = "two.sided",
+                        "\\( \\sigma^2_1 > \\sigma^2_2 \\)" = "greater",
+                        "\\( \\sigma^2_1 < \\sigma^2_2 \\)" = "less")
+                )
             ),
             hr(),
             sliderInput("alpha",
@@ -967,7 +981,7 @@ server <- function(input, output) {
             )
         } else if (input$inference == "two variances") {
             test_confint <- var.test(x = dat1, y = dat2, ratio = 1, alternative = "two.sided", conf.level = 1-input$alpha)
-            test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative, conf.level = 1-input$alpha)
+            test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative_twovar, conf.level = 1-input$alpha)
             withMathJax(
                 paste("Your data:"),
                 br(),
@@ -1014,37 +1028,35 @@ server <- function(input, output) {
                 paste0("2. Test statistic : \\(F_{obs} = \\dfrac{s^2_1}{s^2_2} = \\) ",
                        "[", round(var(dat1), 3), " / ", round(var(dat2), 3), "]", " \\( = \\) ",
                        round(test$statistic, 3)),
-                # paste0("2. Test statistic : \\(F_{obs} = \\dfrac{max(s^2_1, s^2_2)}{min(s^2_1, s^2_2)} = \\) ",
-                #        "[", round(max(c(var(dat1), var(dat2))), 3), " / ", round(min(c(var(dat1), var(dat2))), 3), "]", " \\( = \\) ",
-                #        round(max(c(var(dat1), var(dat2)))/min(c(var(dat1), var(dat2))), 3)),
                 br(),
-                if (input$alternative == "two.sided") {
+                if (test$alternative == "two.sided") {
                     withMathJax(
                         paste0("3. Critical values : \\( F_{1-\\alpha/2, n_1 - 1, n_2-1} \\) and \\( F_{\\alpha/2, n_1 - 1, n_2-1} =\\) "),
                         paste0("\\( \\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} \\) and \\( F_{\\alpha/2, n_1 - 1, n_2-1} =\\) "),
                         paste0("\\( 1/F \\)(", input$alpha/2, ", ", test$parameter[1], ", ", test$parameter[2], ") and \\( F \\)(", input$alpha/2, ", ", test$parameter[1], ", ", test$parameter[2], ") = "),
                         paste0(round(qf(input$alpha/2, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = TRUE), 3), " and ", round(qf(input$alpha/2, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = FALSE), 3))
                     )
-                } else if (input$alternative == "greater") {
-                    # withMathJax(
-                    #     paste0("3. Critical value : \\( \\chi^2_{\\alpha, n - 1} =\\) "),
-                    #     paste0("\\( \\chi^2 \\)(", input$alpha, ", ", test$parameters, ") = "),
-                    #     paste0(round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3))
-                    # )
+                } else if (test$alternative == "greater") {
+                    withMathJax(
+                        paste0("3. Critical value : \\( F_{\\alpha, n_1 - 1, n_2-1} =\\) "),
+                        paste0("\\( F \\)(", input$alpha, ", ", test$parameter[1], ", ", test$parameter[2], ") = "),
+                        paste0(round(qf(input$alpha, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = FALSE), 3))
+                    )
                 } else {
-                    # withMathJax(
-                    #     paste0("3. Critical value : \\( \\chi^2_{1-\\alpha, n - 1} =\\) "),
-                    #     paste0("\\( \\chi^2 \\)(", 1-input$alpha, ", ", test$parameters, ") = "),
-                    #     paste0(round(qchisq(1-input$alpha, df = test$parameters, lower.tail = FALSE), 3))
-                    # )
+                    withMathJax(
+                        paste0("3. Critical values : \\( F_{1-\\alpha, n_1 - 1, n_2-1} = \\) "),
+                        paste0("\\( \\dfrac{1}{F_{\\alpha, n_1 - 1, n_2-1}} = \\) "),
+                        paste0("\\( 1/F \\)(", input$alpha, ", ", test$parameter[1], ", ", test$parameter[2], ") = "),
+                        paste0(round(qf(input$alpha, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = TRUE), 3))
+                    )
                 },
                 br(),
-                # paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
                 br(),
                 br(),
                 tags$b("Interpretation"),
-                br()
-                # paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true variance is equal to ", "we do not reject the null hypothesis that the true variance is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true ratio of variances is equal to ", "we do not reject the null hypothesis that the true ratio of variances is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
             )
         } else {
             print("loading...")
@@ -1328,6 +1340,40 @@ server <- function(input, output) {
                 geom_vline(xintercept = test$statistic, color = "steelblue") +
                 geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.025), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
                 ggtitle("Chi-square distribution") +
+                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+                ylab("Density") +
+                xlab("x")
+            p
+        } else if (input$inference == "two variances") {
+            dat1 <- extract(input$sample1_twovar)
+            dat2 <- extract(input$sample2_twovar)
+            test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative_twovar, conf.level = 1-input$alpha)
+            if (test$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- df(x, df1 = test$parameter[1], df2 = test$parameter[2])
+                    y[x > qf(1-input$alpha/2, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = FALSE) & x < qf(1-input$alpha/2, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = TRUE)] <- NA
+                    return(y)
+                }
+            } else if (test$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- df(x, df1 = test$parameter[1], df2 = test$parameter[2])
+                    y[x < qf(input$alpha, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = FALSE)] <- NA
+                    return(y)
+                }
+            } else if (test$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- df(x, df1 = test$parameter[1], df2 = test$parameter[2])
+                    y[x > qf(1-input$alpha, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = FALSE)] <- NA
+                    return(y)
+                }
+            }
+            p <- ggplot(data.frame(x = c(0, qf(0.99, df1 = test$parameter[1], df2 = test$parameter[2], lower.tail = TRUE))), aes(x = x)) +
+                stat_function(fun = df, args = list(df1 = test$parameter[1], df2 = test$parameter[2])) +
+                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
+                theme_minimal() +
+                geom_vline(xintercept = test$statistic, color = "steelblue") +
+                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
+                ggtitle("Fisher distribution") +
                 theme(plot.title = element_text(face="bold", hjust = 0.5)) +
                 ylab("Density") +
                 xlab("x")
