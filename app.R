@@ -1339,7 +1339,7 @@ server <- function(input, output) {
                 theme_minimal() +
                 geom_vline(xintercept = test$statistic, color = "steelblue") +
                 geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.025), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
-                ggtitle("Chi-square distribution") +
+                ggtitle(paste0("Chi-square distribution (df = ", test$parameters, ")")) +
                 theme(plot.title = element_text(face="bold", hjust = 0.5)) +
                 ylab("Density") +
                 xlab("x")
@@ -1373,7 +1373,7 @@ server <- function(input, output) {
                 theme_minimal() +
                 geom_vline(xintercept = test$statistic, color = "steelblue") +
                 geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
-                ggtitle("Fisher distribution") +
+                ggtitle(paste0("F distribution F(", test$parameter[1], ", ", test$parameter[2], ")")) +
                 theme(plot.title = element_text(face="bold", hjust = 0.5)) +
                 ylab("Density") +
                 xlab("x")
