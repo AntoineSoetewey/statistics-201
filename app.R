@@ -26,7 +26,7 @@ ui <- fluidPage(
                 label = "Inference for:",
                 choices = c("one mean", "two means", "one proportion", "two proportions", "one variance", "two variances"),
                 multiple = FALSE,
-                selected = "two variances"),
+                selected = "one mean"),
             hr(),
             conditionalPanel(
                 condition = "input.inference == 'one mean'",
@@ -130,8 +130,8 @@ ui <- fluidPage(
             ),
             conditionalPanel(
                 condition = "input.inference == 'two variances'",
-                textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-                textInput("sample2_twovar", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
+                textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2, 0.7, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+                textInput("sample2_twovar", "Sample 2", value = "0.4, -0.3, -0.1, 0.4, 0.1, 0.2, -0.1, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
             ),
             hr(),
             tags$b("Null hypothesis"),
