@@ -24,7 +24,7 @@ ui <- fluidPage(
             selectInput(
                 inputId = "inference",
                 label = "Inference for:",
-                choices = c("one mean", "two means", "one proportion", "two proportions", "one variance", "two variances"),
+                choices = c("one mean", "two means", "two means (paired samples)", "one proportion", "two proportions", "one variance", "two variances"),
                 multiple = FALSE,
                 selected = "one mean"),
             hr(),
@@ -60,6 +60,18 @@ ui <- fluidPage(
                     numericInput("sigma21_twomeans", "\\(\\sigma^2_1 = \\)",
                                  value = 1, min = 0, step = 1),
                     numericInput("sigma22_twomeans", "\\(\\sigma^2_2 = \\)",
+                                 value = 1, min = 0, step = 1)
+                )
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two means (paired samples)'",
+                textInput("sample1_twomeanspaired", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+                textInput("sample2_twomeanspaired", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+                hr(),
+                checkboxInput("popsd_twomeanspaired", "\\( \\sigma^2_D \\) is known", FALSE),
+                conditionalPanel(
+                    condition = "input.popsd_twomeanspaired == 1",
+                    numericInput("sigma2_twomeanspaired", "\\(\\sigma^2_D = \\)",
                                  value = 1, min = 0, step = 1)
                 )
             ),
@@ -144,6 +156,10 @@ ui <- fluidPage(
                 sprintf("\\( H_0 : \\mu_1 - \\mu_2 = \\)")
             ),
             conditionalPanel(
+                condition = "input.inference == 'two means (paired samples)'",
+                sprintf("\\( H_0 : \\mu_D = \\)")
+            ),
+            conditionalPanel(
                 condition = "input.inference == 'one proportion'",
                 sprintf("\\( H_0 : p = \\)")
             ),
@@ -213,6 +229,10 @@ ui <- fluidPage(
             conditionalPanel(
                 condition = "input.inference == 'two means'",
                 uiOutput("results_twomeans")
+            ),
+            conditionalPanel(
+                condition = "input.inference == 'two means (paired samples)'",
+                uiOutput("results_twomeanspaired")
             ),
             conditionalPanel(
                 condition = "input.inference == 'one proportion'",
@@ -428,6 +448,113 @@ server <- function(input, output) {
                 tags$b("Interpretation"),
                 br(),
                 paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean is ", "we do not reject the null hypothesis that the true mean is "), input$h0, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else {
+            print("loading...")
+        }
+    })
+    
+    output$results_twomeanspaired <- renderUI({
+        dat1 <- extract(input$sample1_twomeanspaired)
+        dat2 <- extract(input$sample2_twomeanspaired)
+        if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) {
+            "Invalid input or not enough observations"
+        } else if (length(dat1) != length(dat2)) {
+            "Number of observations must be equal in the two samples"
+        } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == FALSE) {
+            test_confint <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = "two.sided", conf.level = 1-input$alpha, paired = TRUE)
+            test <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha, paired = TRUE)
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+                br(),
+                paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+                br(),
+                paste(c("Difference \\((D) = Sample_2 - Sample_1=\\)", paste(dat2 - dat1, collapse = ", ")), collapse = " "),
+                br(),
+                paste0("Number of pairs \\(n =\\) ", length(dat1)),
+                br(),
+                paste0("\\(\\bar{D} =\\) ", round(mean(dat2-dat1), 3)),
+                br(),
+                paste0("\\(s^2_D =\\) ", round(var(dat2-dat1), 3)),
+                br(),
+                paste0("\\(s_D =\\) ", round(sd(dat2-dat1), 3)),
+                br(),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% CI for \\(\\mu_D = \\bar{D} \\pm t_{\\alpha/2, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ",
+                       round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha/2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr*sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : \\mu_D = \\) ", test$null.value, " and \\(H_1 : \\mu_D \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
+                br(),
+                paste0("2. Test statistic : \\(t_{obs} = \\dfrac{\\bar{D} - \\mu_0}{s_D / \\sqrt{n}} = \\) ",
+                       "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
+                       round(test$statistic, 3)),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm t_{\\alpha/2, n - 1} = \\pm t(\\)", ifelse(input$alternative == "greater", " \\( t_{\\alpha, n - 1} = t(\\)", " \\( -t_{\\alpha, n - 1} = -t(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), ", ", test$parameter, "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                       ifelse(input$alternative == "two.sided", round(qt(input$alpha/2, df = test$parameter, lower.tail = FALSE), 3), round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean of the difference is equal to ", "we do not reject the null hypothesis that the true mean of the difference is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+            )
+        } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == TRUE) {
+            test <- t.test2(x = dat2-dat1, V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+            withMathJax(
+                paste("Your data:"),
+                br(),
+                paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+                br(),
+                paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+                br(),
+                paste(c("Difference \\((D) = Sample_2 - Sample_1=\\)", paste(dat2 - dat1, collapse = ", ")), collapse = " "),
+                br(),
+                paste0("Number of pairs \\(n =\\) ", length(dat1)),
+                br(),
+                paste0("\\(\\bar{D} =\\) ", round(mean(dat2-dat1), 3)),
+                br(),
+                paste0("\\(\\sigma^2_D =\\) ", round(input$sigma2_twomeanspaired, 3)),
+                br(),
+                paste0("\\(\\sigma_D =\\) ", round(sqrt(input$sigma2_twomeanspaired), 3)),
+                br(),
+                br(),
+                tags$b("Confidence interval"),
+                br(),
+                paste0((1-input$alpha)*100, "% Confidence Interval for \\(\\mu_D = \\bar{D} \\pm z_{\\alpha/2} \\dfrac{\\sigma_D}{\\sqrt{n}} = \\) ",
+                       round(test$mean, 3), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ",
+                       "[", round(test$LCL, 3), "; ", round(test$UCL, 3), "]"),
+                br(),
+                br(),
+                tags$b("Hypothesis test"),
+                br(),
+                paste0("1. \\(H_0 : \\mu_D = \\) ", input$h0, " and \\(H_1 : \\mu_D \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), input$h0),
+                br(),
+                paste0("2. Test statistic : \\(z_{obs} = \\dfrac{\\bar{D} - \\mu_0}{\\sigma_D / \\sqrt{n}} = \\) ",
+                       "(", round(test$mean, 3), ifelse(input$h0 >= 0, paste0(" - ", input$h0), paste0(" + ", abs(input$h0))), ") / ", round(test$sigma / sqrt(length(dat1)), 3), " \\( = \\) ",
+                       round(test$statistic, 3)),
+                br(),
+                paste0("3. Critical value :", ifelse(input$alternative == "two.sided", " \\( \\pm z_{\\alpha/2} = \\pm z(\\)", ifelse(input$alternative == "greater", " \\( z_{\\alpha} = z(\\)", " \\( -z_{\\alpha} = -z(\\)")),
+                       ifelse(input$alternative == "two.sided", input$alpha/2, input$alpha), "\\()\\)", " \\( = \\) ",
+                       ifelse(input$alternative == "two.sided", "\\( \\pm \\)", ifelse(input$alternative == "greater", "", " -")),
+                       ifelse(input$alternative == "two.sided", round(qnorm(input$alpha/2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))),
+                br(),
+                paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+                br(),
+                br(),
+                tags$b("Interpretation"),
+                br(),
+                paste0("At the ", input$alpha*100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean of the difference is equal to ", "we do not reject the null hypothesis that the true mean of the difference is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
             )
         } else {
             print("loading...")
@@ -1204,6 +1331,75 @@ server <- function(input, output) {
             dat1 <- extract(input$sample1_twomeans)
             dat2 <- extract(input$sample2_twomeans)
             test <- t.test3(x = dat1, y = dat2, V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha/2, mean = 0, sd = 1, lower.tail = FALSE) & x > qnorm(input$alpha/2, mean = 0, sd = 1) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x < qnorm(input$alpha, mean = 0, sd = 1, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dnorm(x, mean = 0, sd = 1)
+                    y[x > qnorm(input$alpha, mean = 0, sd = 1, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
+            }
+            p <- ggplot(data.frame(x = c(qnorm(0.999, mean=0, sd = 1, lower.tail = FALSE), qnorm(0.999, mean=0, sd = 1, lower.tail = TRUE))), aes(x = x)) +
+                stat_function(fun = dnorm, args = list(mean=0, sd = 1)) +
+                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
+                theme_minimal() +
+                geom_vline(xintercept = test$statistic, color = "steelblue") +
+                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
+                ggtitle(paste0("Normal distribution N(0,1)")) +
+                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+                ylab("Density") +
+                xlab("x")
+            p
+            
+        } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == FALSE) {
+            dat1 <- extract(input$sample1_twomeanspaired)
+            dat2 <- extract(input$sample2_twomeanspaired)
+            test <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = input$alternative, conf.level = 1-input$alpha, paired = TRUE)
+            if (input$alternative == "two.sided") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha/2, df = test$parameter, lower.tail = FALSE) & x > qt(input$alpha/2, df = test$parameter) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "greater") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x < qt(input$alpha, df = test$parameter, lower.tail = FALSE) ] <- NA
+                    return(y)
+                }
+            } else if (input$alternative == "less") {
+                funcShaded <- function(x) {
+                    y <- dt(x, df = test$parameter)
+                    y[x > qt(input$alpha, df = test$parameter, lower.tail = TRUE) ] <- NA
+                    return(y)
+                }
+            }
+            p <- ggplot(data.frame(x = c(qt(0.999, df = test$parameter, lower.tail = FALSE), qt(0.999, df = test$parameter, lower.tail = TRUE))), aes(x = x)) +
+                stat_function(fun = dt, args = list(df = test$parameter)) +
+                stat_function(fun=funcShaded, geom="area", alpha=0.8) +
+                theme_minimal() +
+                geom_vline(xintercept = test$statistic, color = "steelblue") +
+                geom_text(aes(x=test$statistic, label=paste0("Test statistic = ", round(test$statistic, 3)), y = 0.2), colour="steelblue", angle=90, vjust = 1.3, text=element_text(size=11))+
+                ggtitle(paste0("Student distribution", " t(", round(test$parameter, 3), ")")) +
+                theme(plot.title = element_text(face="bold", hjust = 0.5)) +
+                ylab("Density") +
+                xlab("x")
+            p
+        } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == TRUE) {
+            dat1 <- extract(input$sample1_twomeanspaired)
+            dat2 <- extract(input$sample2_twomeanspaired)
+            test <- t.test2(x = dat2-dat1, V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
             if (input$alternative == "two.sided") {
                 funcShaded <- function(x) {
                     y <- dnorm(x, mean = 0, sd = 1)
