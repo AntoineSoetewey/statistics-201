@@ -392,6 +392,23 @@ server <- function(input, output) {
     )
     return(list(x1 = x1, x2 = x2, n1 = n1, n2 = n2, estimate1 = phat1, estimate2 = phat2, null.value = p0, stderr = SE.phat, pooled.phat = pooled.phat, statistic = ts.z, p.value = p.val, conf.int = cint))
   }
+  prop.z.test3 <- function(x, n, p0 = 0.5, conf.level = 0.95, alternative = "two.sided") {
+    ts.z <- NULL
+    cint <- NULL
+    p.val <- NULL
+    phat <- x / n
+    qhat <- 1 - phat
+    SE.phat <- sqrt((p0 * (1-p0)) / n)
+    ts.z <- (phat - p0) / SE.phat
+    p.val <- if (alternative == "two.sided") {
+      2 * pnorm(abs(ts.z), lower.tail = FALSE)
+    } else if (alternative == "less") {
+      pnorm(ts.z, lower.tail = TRUE)
+    } else {
+      pnorm(ts.z, lower.tail = FALSE)
+    }
+    return(list(x = x, n = n, estimate = phat, null.value = p0, stderr = SE.phat, statistic = ts.z, p.value = p.val))
+  }
 
   output$results_onemean <- renderUI({
     dat <- extract(input$sample_onemean)
@@ -801,6 +818,7 @@ server <- function(input, output) {
   output$results_oneprop <- renderUI({
     if (input$inference == "one proportion" & input$propx_oneprop == "prop_true") {
       test <- prop.z.test(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
+      test2 <- prop.z.test3(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       test_confint <- prop.z.test(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided")
       withMathJax(
         paste("Your data:"),
@@ -828,9 +846,9 @@ server <- function(input, output) {
         paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
         br(),
         paste0(
-          "2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}} = \\) ",
-          "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-          ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
+          "2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{p_0(1-p_0)}{n}}} = \\) ",
+          "(", round(test2$estimate, 3), ifelse(test2$null.value >= 0, paste0(" - ", test2$null.value), paste0(" + ", abs(test2$null.value))), ") / ", round(test2$stderr, 3), " \\( = \\) ",
+          ifelse(test2$null.value >= 0 & test2$null.value <= 1, round(test2$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
         ),
         br(),
         paste0(
@@ -840,15 +858,16 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))
         ),
         br(),
-        paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+        paste0("4. Conclusion : ", ifelse(test2$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
         br(),
         br(),
         tags$b("Interpretation"),
         br(),
-        paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+        paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test2$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test2$null.value, " \\((p\\)-value ", ifelse(test2$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test2$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "one proportion" & input$propx_oneprop == "prop_false") {
       test <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
+      test2 <- prop.z.test3(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       test_confint <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided")
       withMathJax(
         paste("Your data:"),
@@ -876,9 +895,9 @@ server <- function(input, output) {
         paste0("1. \\(H_0 : p = \\) ", test$null.value, " and \\(H_1 : p \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
         br(),
         paste0(
-          "2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}} = \\) ",
-          "(", round(test$estimate, 3), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-          ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
+          "2. Test statistic : \\(z_{obs} = \\dfrac{\\hat{p} - p_0}{\\sqrt{\\dfrac{p_0(1-p_0)}{n}}} = \\) ",
+          "(", round(test2$estimate, 3), ifelse(test2$null.value >= 0, paste0(" - ", test2$null.value), paste0(" + ", abs(test2$null.value))), ") / ", round(test2$stderr, 3), " \\( = \\) ",
+          ifelse(test2$null.value >= 0 & test2$null.value <= 1, round(test2$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
         ),
         br(),
         paste0(
@@ -888,12 +907,12 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), round(qnorm(input$alpha, lower.tail = FALSE), 3))
         ),
         br(),
-        paste0("4. Conclusion : ", ifelse(test$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
+        paste0("4. Conclusion : ", ifelse(test2$p.value < input$alpha, "Reject \\(H_0\\)", "Do not reject \\(H_0\\)")),
         br(),
         br(),
         tags$b("Interpretation"),
         br(),
-        paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
+        paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test2$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test2$null.value, " \\((p\\)-value ", ifelse(test2$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test2$p.value, 3))), ")", ".")
       )
     } else {
       print("loading...")
@@ -937,9 +956,9 @@ server <- function(input, output) {
         paste0("1. \\(H_0 : p_1 - p_2 = \\) ", test$null.value, " and \\(H_1 : p_1 - p_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
         br(),
         paste0(
-          "2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+          "2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - (p_1 - p_2)}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
           "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-          ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
+          ifelse(test$null.value >= -1 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_1 - p_2 \\) must be \\( -1 \\leq p_1 - p_2 \\leq 1\\)")
         ),
         br(),
         paste0(
@@ -992,9 +1011,9 @@ server <- function(input, output) {
         paste0("1. \\(H_0 : p_1 - p_2 = \\) ", test$null.value, " and \\(H_1 : p_1 - p_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
         br(),
         paste0(
-          "2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+          "2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - (p_1 - p_2)}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
           "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-          ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
+          ifelse(test$null.value >= -1 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_1 - p_2 \\) must be \\( -1 \\leq p_1 - p_2 \\leq 1\\)")
         ),
         br(),
         paste0(
@@ -1046,14 +1065,14 @@ server <- function(input, output) {
         br(),
         paste0("1. \\(H_0 : p_1 - p_2 = \\) ", test$null.value, " and \\(H_1 : p_1 - p_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
         br(),
-        paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} \\) "),
+        paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - (p_1 - p_2)}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} \\) "),
         br(),
         paste0("where ", "\\( \\hat{p} = \\dfrac{n_1 \\hat{p}_1 + n_2 + \\hat{p}_2}{n_1 + n_2} = \\) ", "(", test$n1, " * ", round(test$estimate1, 3), " + ", test$n2, " * ", round(test$estimate2, 3), ") / (", test$n1, " + ", test$n2, ") = ", round(test$pooled.phat, 3)),
         br(),
         paste0(
-          "\\( \\Rightarrow z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+          "\\( \\Rightarrow z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - (p_1 - p_2)}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} = \\) ",
           "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-          ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
+          ifelse(test$null.value >= -1 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_1 - p_2 \\) must be \\( -1 \\leq p_1 - p_2 \\leq 1\\)")
         ),
         br(),
         paste0(
@@ -1105,14 +1124,14 @@ server <- function(input, output) {
         br(),
         paste0("1. \\(H_0 : p_1 - p_2 = \\) ", test$null.value, " and \\(H_1 : p_1 - p_2 \\) ", ifelse(input$alternative == "two.sided", "\\( \\neq \\) ", ifelse(input$alternative == "greater", "\\( > \\) ", "\\( < \\) ")), test$null.value),
         br(),
-        paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} \\) "),
+        paste0("2. Test statistic : \\(z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - (p_1 - p_2)}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} \\) "),
         br(),
         paste0("where ", "\\( \\hat{p} = \\dfrac{n_1 \\hat{p}_1 + n_2 + \\hat{p}_2}{n_1 + n_2} = \\) ", "(", test$n1, " * ", round(test$estimate1, 3), " + ", test$n2, " * ", round(test$estimate2, 3), ") / (", test$n1, " + ", test$n2, ") = ", round(test$pooled.phat, 3)),
         br(),
         paste0(
-          "\\( \\Rightarrow z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - p_0}{\\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}} = \\) ",
+          "\\( \\Rightarrow z_{obs} = \\dfrac{(\\hat{p}_1 - \\hat{p}_2) - (p_1 - p_2)}{\\sqrt{\\hat{p}(1-\\hat{p})\\Big(\\dfrac{1}{n_1} + \\dfrac{1}{n_2}\\Big)}} = \\) ",
           "(", round(test$estimate1, 3), ifelse(test$estimate2 >= 0, paste0(" - ", round(test$estimate2, 3)), paste0(" + ", round(abs(test$estimate2), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / ", round(test$stderr, 3), " \\( = \\) ",
-          ifelse(test$null.value >= 0 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_0 \\) must be \\( 0 \\leq p_0 \\leq 1\\)")
+          ifelse(test$null.value >= -1 & test$null.value <= 1, round(test$statistic, 3), "Error: \\( p_1 - p_2 \\) must be \\( -1 \\leq p_1 - p_2 \\leq 1\\)")
         ),
         br(),
         paste0(
@@ -1542,9 +1561,9 @@ server <- function(input, output) {
       p
     } else if (input$inference == "one proportion") {
       if (input$propx_oneprop == "prop_true") {
-        test <- prop.z.test(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
+        test <- prop.z.test3(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       } else {
-        test <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
+        test <- prop.z.test3(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
