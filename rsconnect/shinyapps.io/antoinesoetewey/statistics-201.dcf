@@ -5,8 +5,8 @@ account: antoinesoetewey
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1449760
-bundleId: 3996119
+bundleId: 4025694
 url: https://antoinesoetewey.shinyapps.io/statistics-201/
-when: 1608114137.4918
+when: 1608814119.43143
 asMultiple: FALSE
 asStatic: FALSE
