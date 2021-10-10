@@ -428,6 +428,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ",
@@ -473,6 +474,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm z_{\\alpha/2} \\dfrac{\\sigma}{\\sqrt{n}} = \\) ",
@@ -539,6 +541,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(\\mu_D = \\bar{D} \\pm t_{\\alpha/2, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ",
@@ -592,6 +595,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% Confidence Interval for \\(\\mu_D = \\bar{D} \\pm z_{\\alpha/2} \\dfrac{\\sigma_D}{\\sqrt{n}} = \\) ",
@@ -659,6 +663,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0((1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, n_1 + n_2 - 2} (s_p) \\sqrt{\\dfrac{1}{n_1} + \\dfrac{1}{n_2}} \\)"),
         br(),
@@ -719,6 +724,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0((1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, \\nu} \\sqrt{\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}} \\)"),
         br(),
@@ -778,6 +784,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% Confidence Interval for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\sigma^2_1}{n_1} + \\dfrac{\\sigma^2_2}{n_2}} = \\) ",
@@ -833,6 +840,7 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n\\hat{p} \\geq 5\\) and \\( n(1-\\hat{p}) \\geq 5\\)", ifelse(test$n * test$estimate >= 5 & test$n * (1 - test$estimate) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(p = \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} = \\) ",
@@ -882,6 +890,7 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n\\hat{p} \\geq 5\\) and \\( n(1-\\hat{p}) \\geq 5\\)", ifelse(test$n * test$estimate >= 5 & test$n * (1 - test$estimate) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(p = \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} = \\) ",
@@ -943,6 +952,7 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
@@ -998,6 +1008,7 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
@@ -1053,6 +1064,7 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
@@ -1112,6 +1124,7 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\hat{p}_1 \\geq 5\\), \\( n_1(1-\\hat{p}_1) \\geq 5\\), \\( n_2\\hat{p}_2 \\geq 5\\) and \\( n_2(1-\\hat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\hat{p}_1 - \\hat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\dfrac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}} = \\) ",
@@ -1175,6 +1188,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ",
@@ -1258,6 +1272,7 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
+        tags$em("(two-sided)"),
         br(),
         paste0(
           (1 - input$alpha) * 100, "% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha/2, n_1 - 1, n_2-1} \\Bigg] = \\) ",
