@@ -1,289 +1,310 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
 library(ggplot2)
 library(EnvStats)
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
-
-  # Application title
-  titlePanel("Statistics 201 - Inference"),
-  h4(tags$a(href = "https://antoinesoetewey.com/", "Antoine Soetewey")),
-  withMathJax(),
-
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        inputId = "inference",
-        label = "Inference for:",
-        choices = c("one mean", "two means (independent samples)", "two means (paired samples)", "one proportion", "two proportions", "one variance", "two variances"),
-        multiple = FALSE,
-        selected = "one mean"
+ui <- shiny::tagList(
+  withMathJax(), 
+  includeCSS(path = "www/css/styles.css"), 
+  
+  tags$head(
+    tags$link(
+      rel = "shortcut icon", 
+      href = "https://antoinesoetewey.com/favicon.ico"
+    )
+  ), 
+  
+  tags$div(
+    tags$div(
+      class = "app_title", 
+      
+      titlePanel(
+        title = "Statistics 201 - Inference", 
+        windowTitle = "Inference"
       ),
-      hr(),
-      conditionalPanel(
-        condition = "input.inference == 'one mean'",
-        textInput("sample_onemean", "Sample", value = "0.9, -0.8, 1.3, -0.3, 1.7", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-        hr(),
-        checkboxInput("popsd_onemean", "Variance of the population is known", FALSE),
-        conditionalPanel(
-          condition = "input.popsd_onemean == 1",
-          numericInput("sigma2_onemean", "\\(\\sigma^2 = \\)",
-            value = 1, min = 0, step = 1
-          )
+      
+      tags$h4(
+        tags$a(
+          href = "https://antoinesoetewey.com/", 
+          target = "_blank", 
+          "Antoine Soetewey"
         )
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two means (independent samples)'",
-        textInput("sample1_twomeans", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-        textInput("sample2_twomeans", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-        hr(),
-        conditionalPanel(
-          condition = "input.popsd_twomeans == 0",
-          radioButtons(
-            inputId = "var.equal",
-            label = "Assuming",
-            choices = c(
-              "\\( \\sigma^2_1 = \\sigma^2_2 \\)" = TRUE,
-              "\\( \\sigma^2_1 \\neq \\sigma^2_2 \\)" = FALSE
-            )
-          )
-        ),
-        checkboxInput("popsd_twomeans", "Variance of the populations are known", FALSE),
-        conditionalPanel(
-          condition = "input.popsd_twomeans == 1",
-          numericInput("sigma21_twomeans", "\\(\\sigma^2_1 = \\)",
-            value = 1, min = 0, step = 1
-          ),
-          numericInput("sigma22_twomeans", "\\(\\sigma^2_2 = \\)",
-            value = 1, min = 0, step = 1
-          )
-        )
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two means (paired samples)'",
-        textInput("sample1_twomeanspaired", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-        textInput("sample2_twomeanspaired", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-        hr(),
-        checkboxInput("popsd_twomeanspaired", "\\( \\sigma^2_D \\) is known", FALSE),
-        conditionalPanel(
-          condition = "input.popsd_twomeanspaired == 1",
-          numericInput("sigma2_twomeanspaired", "\\(\\sigma^2_D = \\)",
-            value = 1, min = 0, step = 1
-          )
-        )
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'one proportion'",
-        tags$b("Sample size"),
-        numericInput("n_oneprop", "\\(n = \\)",
-          value = 30, min = 0, step = 1
-        ),
-        hr(),
-        radioButtons(
-          inputId = "propx_oneprop",
-          label = NULL,
-          choices = c(
-            "Proportion of success \\(\\hat{p}\\)" = "prop_true",
-            "Number of successes \\(x\\)" = "prop_false"
-          )
-        ),
-        conditionalPanel(
-          condition = "input.propx_oneprop == 'prop_true'",
-          tags$b("Proportion of success"),
-          numericInput("p_oneprop", "\\(\\hat{p} = \\)",
-            value = 0.2, min = 0, max = 1, step = 0.01
-          )
-        ),
-        conditionalPanel(
-          condition = "input.propx_oneprop == 'prop_false'",
-          tags$b("Number of successes"),
-          numericInput("x_oneprop", "\\(x = \\)",
-            value = 10, min = 0, step = 1
-          )
-        )
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two proportions'",
-        tags$b("Sample size 1"),
-        numericInput("n1_twoprop", "\\(n_1 = \\)",
-          value = 30, min = 0, step = 1
-        ),
-        tags$b("Sample size 2"),
-        numericInput("n2_twoprop", "\\(n_2 = \\)",
-          value = 30, min = 0, step = 1
-        ),
-        hr(),
-        radioButtons(
-          inputId = "propx_twoprop",
-          label = NULL,
-          choices = c(
-            "Proportion of success \\(\\hat{p}\\)" = "prop_true",
-            "Number of successes \\(x\\)" = "prop_false"
-          )
-        ),
-        conditionalPanel(
-          condition = "input.propx_twoprop == 'prop_true'",
-          tags$b("Proportion of success"),
-          numericInput("p1_twoprop", "\\(\\hat{p}_1 = \\)",
-            value = 0.2, min = 0, max = 1, step = 0.01
-          ),
-          numericInput("p2_twoprop", "\\(\\hat{p}_2 = \\)",
-            value = 0.3, min = 0, max = 1, step = 0.01
-          )
-        ),
-        conditionalPanel(
-          condition = "input.propx_twoprop == 'prop_false'",
-          tags$b("Number of successes"),
-          numericInput("x1_twoprop", "\\(x_1 = \\)",
-            value = 10, min = 0, step = 1
-          ),
-          numericInput("x2_twoprop", "\\(x_2 = \\)",
-            value = 12, min = 0, step = 1
-          )
-        )
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'one variance'",
-        textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc.")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two variances'",
-        textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2, 0.7, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-        textInput("sample2_twovar", "Sample 2", value = "0.4, -0.3, -0.1, 0.4, 0.1, 0.2, -0.1, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
-      ),
-      hr(),
-      tags$b("Null hypothesis"),
-      conditionalPanel(
-        condition = "input.inference == 'one mean'",
-        sprintf("\\( H_0 : \\mu = \\)")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two means (independent samples)'",
-        sprintf("\\( H_0 : \\mu_1 - \\mu_2 = \\)")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two means (paired samples)'",
-        sprintf("\\( H_0 : \\mu_D = \\)")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'one proportion'",
-        sprintf("\\( H_0 : p = \\)")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two proportions'",
-        sprintf("\\( H_0 : p_1 - p_2 = \\)")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'one variance'",
-        sprintf("\\( H_0 : \\sigma^2 = \\)")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two variances'",
-        sprintf("\\( H_0 : \\sigma^2_1 = \\sigma^2_2 \\)")
-      ),
-      conditionalPanel(
-        condition = "input.inference != 'two variances'",
-        numericInput("h0",
-          label = NULL,
-          value = 0.1, step = 0.1
-        )
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two variances'",
-        br()
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two proportions'",
-        checkboxInput("pooledstderr_twoprop", "Use pooled standard error", FALSE)
-      ),
-      conditionalPanel(
-        condition = "input.inference != 'two variances'",
-        radioButtons(
-          inputId = "alternative",
-          label = "Alternative",
-          choices = c(
-            "\\( \\neq \\)" = "two.sided",
-            "\\( > \\)" = "greater",
-            "\\( < \\)" = "less"
-          )
-        )
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two variances'",
-        radioButtons(
-          inputId = "alternative_twovar",
-          label = "Alternative",
-          choices = c(
-            "\\( \\sigma^2_1 \\neq \\sigma^2_2 \\)" = "two.sided",
-            "\\( \\sigma^2_1 > \\sigma^2_2 \\)" = "greater",
-            "\\( \\sigma^2_1 < \\sigma^2_2 \\)" = "less"
-          )
-        )
-      ),
-      hr(),
-      sliderInput("alpha",
-        "Significance level \\(\\alpha = \\)",
-        min = 0.01,
-        max = 0.20,
-        value = 0.05
-      ),
-      hr(),
-      HTML('<p>Report a <a href="https://github.com/AntoineSoetewey/statistics-201/issues">bug</a> or view the <a href="https://github.com/AntoineSoetewey/statistics-201">code</a>. Back to <a href="https://antoinesoetewey.com/">antoinesoetewey.com</a> or <a href="https://statsandr.com/">statsandr.com</a>.</p>'),
-      hr(),
-      # HTML('<hr style="border:1px solid #ccc;"/>'),
-      HTML('<a rel="license" href="http://creativecommons.org/licenses/by/2.0/be/" target="_blank"><img alt="Licence Creative Commons" style="border-width:0"
-        src="http://i.creativecommons.org/l/by/2.0/be/80x15.png"/></a> This work of <span xmlns:cc="http://creativecommons.org/ns#"
-        property="cc:attributionName"><font face="Courier">RShiny@UCLouvain</font></span> is made available under the terms of the <a rel="license"
-        href="http://creativecommons.org/licenses/by/2.0/be/" target="_blank">Creative Commons Attribution 2.0 Belgium license</a>. Details on the use of this resource on <a href="http://sites.uclouvain.be/RShiny"
-        target="_blank"><font face="Courier">RShiny@UCLouvain</font></a>. Source code available on <a href="https://github.com/AntoineSoetewey/statistics-201" target="_blank">GitHub</a>.')
+      )
     ),
-
-    mainPanel(
-      conditionalPanel(
-        condition = "input.inference == 'one mean'",
-        uiOutput("results_onemean")
+    
+    # Sidebar with a slider input for number of bins
+    fluidPage(
+      theme = shinythemes::shinytheme("flatly"),
+      sidebarLayout(
+        sidebarPanel(
+          selectInput(
+            inputId = "inference",
+            label = "Inference for:",
+            choices = c("one mean", "two means (independent samples)", "two means (paired samples)", "one proportion", "two proportions", "one variance", "two variances"),
+            multiple = FALSE,
+            selected = "one mean"
+          ),
+          hr(),
+          conditionalPanel(
+            condition = "input.inference == 'one mean'",
+            textInput("sample_onemean", "Sample", value = "0.9, -0.8, 1.3, -0.3, 1.7", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            hr(),
+            checkboxInput("popsd_onemean", "Variance of the population is known", FALSE),
+            conditionalPanel(
+              condition = "input.popsd_onemean == 1",
+              numericInput("sigma2_onemean", "\\(\\sigma^2 = \\)",
+                           value = 1, min = 0, step = 1
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two means (independent samples)'",
+            textInput("sample1_twomeans", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            textInput("sample2_twomeans", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            hr(),
+            conditionalPanel(
+              condition = "input.popsd_twomeans == 0",
+              radioButtons(
+                inputId = "var.equal",
+                label = "Assuming",
+                choices = c(
+                  "\\( \\sigma^2_1 = \\sigma^2_2 \\)" = TRUE,
+                  "\\( \\sigma^2_1 \\neq \\sigma^2_2 \\)" = FALSE
+                )
+              )
+            ),
+            checkboxInput("popsd_twomeans", "Variance of the populations are known", FALSE),
+            conditionalPanel(
+              condition = "input.popsd_twomeans == 1",
+              numericInput("sigma21_twomeans", "\\(\\sigma^2_1 = \\)",
+                           value = 1, min = 0, step = 1
+              ),
+              numericInput("sigma22_twomeans", "\\(\\sigma^2_2 = \\)",
+                           value = 1, min = 0, step = 1
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two means (paired samples)'",
+            textInput("sample1_twomeanspaired", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            textInput("sample2_twomeanspaired", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            hr(),
+            checkboxInput("popsd_twomeanspaired", "\\( \\sigma^2_D \\) is known", FALSE),
+            conditionalPanel(
+              condition = "input.popsd_twomeanspaired == 1",
+              numericInput("sigma2_twomeanspaired", "\\(\\sigma^2_D = \\)",
+                           value = 1, min = 0, step = 1
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'one proportion'",
+            tags$b("Sample size"),
+            numericInput("n_oneprop", "\\(n = \\)",
+                         value = 30, min = 0, step = 1
+            ),
+            hr(),
+            radioButtons(
+              inputId = "propx_oneprop",
+              label = NULL,
+              choices = c(
+                "Proportion of success \\(\\hat{p}\\)" = "prop_true",
+                "Number of successes \\(x\\)" = "prop_false"
+              )
+            ),
+            conditionalPanel(
+              condition = "input.propx_oneprop == 'prop_true'",
+              tags$b("Proportion of success"),
+              numericInput("p_oneprop", "\\(\\hat{p} = \\)",
+                           value = 0.2, min = 0, max = 1, step = 0.01
+              )
+            ),
+            conditionalPanel(
+              condition = "input.propx_oneprop == 'prop_false'",
+              tags$b("Number of successes"),
+              numericInput("x_oneprop", "\\(x = \\)",
+                           value = 10, min = 0, step = 1
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two proportions'",
+            tags$b("Sample size 1"),
+            numericInput("n1_twoprop", "\\(n_1 = \\)",
+                         value = 30, min = 0, step = 1
+            ),
+            tags$b("Sample size 2"),
+            numericInput("n2_twoprop", "\\(n_2 = \\)",
+                         value = 30, min = 0, step = 1
+            ),
+            hr(),
+            radioButtons(
+              inputId = "propx_twoprop",
+              label = NULL,
+              choices = c(
+                "Proportion of success \\(\\hat{p}\\)" = "prop_true",
+                "Number of successes \\(x\\)" = "prop_false"
+              )
+            ),
+            conditionalPanel(
+              condition = "input.propx_twoprop == 'prop_true'",
+              tags$b("Proportion of success"),
+              numericInput("p1_twoprop", "\\(\\hat{p}_1 = \\)",
+                           value = 0.2, min = 0, max = 1, step = 0.01
+              ),
+              numericInput("p2_twoprop", "\\(\\hat{p}_2 = \\)",
+                           value = 0.3, min = 0, max = 1, step = 0.01
+              )
+            ),
+            conditionalPanel(
+              condition = "input.propx_twoprop == 'prop_false'",
+              tags$b("Number of successes"),
+              numericInput("x1_twoprop", "\\(x_1 = \\)",
+                           value = 10, min = 0, step = 1
+              ),
+              numericInput("x2_twoprop", "\\(x_2 = \\)",
+                           value = 12, min = 0, step = 1
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'one variance'",
+            textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc.")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two variances'",
+            textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2, 0.7, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            textInput("sample2_twovar", "Sample 2", value = "0.4, -0.3, -0.1, 0.4, 0.1, 0.2, -0.1, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
+          ),
+          hr(),
+          tags$b("Null hypothesis"),
+          conditionalPanel(
+            condition = "input.inference == 'one mean'",
+            sprintf("\\( H_0 : \\mu = \\)")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two means (independent samples)'",
+            sprintf("\\( H_0 : \\mu_1 - \\mu_2 = \\)")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two means (paired samples)'",
+            sprintf("\\( H_0 : \\mu_D = \\)")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'one proportion'",
+            sprintf("\\( H_0 : p = \\)")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two proportions'",
+            sprintf("\\( H_0 : p_1 - p_2 = \\)")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'one variance'",
+            sprintf("\\( H_0 : \\sigma^2 = \\)")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two variances'",
+            sprintf("\\( H_0 : \\sigma^2_1 = \\sigma^2_2 \\)")
+          ),
+          conditionalPanel(
+            condition = "input.inference != 'two variances'",
+            numericInput("h0",
+                         label = NULL,
+                         value = 0.1, step = 0.1
+            )
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two variances'",
+            br()
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two proportions'",
+            checkboxInput("pooledstderr_twoprop", "Use pooled standard error", FALSE)
+          ),
+          conditionalPanel(
+            condition = "input.inference != 'two variances'",
+            radioButtons(
+              inputId = "alternative",
+              label = "Alternative",
+              choices = c(
+                "\\( \\neq \\)" = "two.sided",
+                "\\( > \\)" = "greater",
+                "\\( < \\)" = "less"
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two variances'",
+            radioButtons(
+              inputId = "alternative_twovar",
+              label = "Alternative",
+              choices = c(
+                "\\( \\sigma^2_1 \\neq \\sigma^2_2 \\)" = "two.sided",
+                "\\( \\sigma^2_1 > \\sigma^2_2 \\)" = "greater",
+                "\\( \\sigma^2_1 < \\sigma^2_2 \\)" = "less"
+              )
+            )
+          ),
+          hr(),
+          sliderInput("alpha",
+                      "Significance level \\(\\alpha = \\)",
+                      min = 0.01,
+                      max = 0.20,
+                      value = 0.05
+          ),
+        ),
+        
+        mainPanel(
+          br(),
+          conditionalPanel(
+            condition = "input.inference == 'one mean'",
+            uiOutput("results_onemean")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two means (independent samples)'",
+            uiOutput("results_twomeans")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two means (paired samples)'",
+            uiOutput("results_twomeanspaired")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'one proportion'",
+            uiOutput("results_oneprop")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two proportions'",
+            uiOutput("results_twoprop")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'one variance'",
+            uiOutput("results_onevar")
+          ),
+          conditionalPanel(
+            condition = "input.inference == 'two variances'",
+            uiOutput("results_twovar")
+          ),
+          br(),
+          br(),
+          plotOutput("plot"),
+          br(),
+          br()
+        )
       ),
-      conditionalPanel(
-        condition = "input.inference == 'two means (independent samples)'",
-        uiOutput("results_twomeans")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two means (paired samples)'",
-        uiOutput("results_twomeanspaired")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'one proportion'",
-        uiOutput("results_oneprop")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two proportions'",
-        uiOutput("results_twoprop")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'one variance'",
-        uiOutput("results_onevar")
-      ),
-      conditionalPanel(
-        condition = "input.inference == 'two variances'",
-        uiOutput("results_twovar")
-      ),
-      br(),
-      br(),
-      plotOutput("plot"),
-      br(),
-      br()
+    )      
+  ), 
+  
+  tags$footer(
+    tags$div(
+      class = "footer_container", 
+      
+      includeHTML(path = "www/html/footer.html")
     )
   )
+  
 )
+  
+
 
 server <- function(input, output) {
   extract <- function(text) {
@@ -418,7 +439,9 @@ server <- function(input, output) {
       test_confint <- t.test(x = dat, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha)
       test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
       withMathJax(
-        paste(c("Your data:", paste(dat, collapse = ", ")), collapse = " "),
+        tags$b("Data"),
+        br(),
+        paste(c(paste(dat, collapse = ", ")), collapse = " "),
         br(),
         paste0("\\(n =\\) ", length(dat)),
         br(),
@@ -464,7 +487,9 @@ server <- function(input, output) {
     } else if (input$inference == "one mean" & input$popsd_onemean == TRUE) {
       test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
       withMathJax(
-        paste(c("Your data:", paste(dat, collapse = ", ")), collapse = " "),
+        tags$b("Data"),
+        br(),
+        paste(c(paste(dat, collapse = ", ")), collapse = " "),
         br(),
         paste0("\\(n =\\) ", length(dat)),
         br(),
@@ -523,7 +548,7 @@ server <- function(input, output) {
       test_confint <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = TRUE)
       test <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = TRUE)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
         br(),
@@ -577,7 +602,7 @@ server <- function(input, output) {
     } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == TRUE) {
       test <- t.test2(x = dat2 - dat1, V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
         br(),
@@ -643,7 +668,7 @@ server <- function(input, output) {
       test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = TRUE)
       s_p <- sqrt(((length(dat1) - 1) * var(dat1) + (length(dat2) - 1) * var(dat2)) / test_confint$parameter)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
         br(),
@@ -704,7 +729,7 @@ server <- function(input, output) {
       test_confint <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
       test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
         br(),
@@ -767,7 +792,7 @@ server <- function(input, output) {
     } else if (input$inference == "two means (independent samples)" & input$popsd_twomeans == TRUE) {
       test <- t.test3(x = dat1, y = dat2, V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
         br(),
@@ -831,7 +856,7 @@ server <- function(input, output) {
       test2 <- prop.z.test3(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       test_confint <- prop.z.test(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided")
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste0("\\(n =\\) ", round(test$n, 3)),
         br(),
@@ -881,7 +906,7 @@ server <- function(input, output) {
       test2 <- prop.z.test3(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       test_confint <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided")
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste0("\\(n =\\) ", round(test$n, 3)),
         br(),
@@ -936,7 +961,7 @@ server <- function(input, output) {
       test <- prop.z.test2(x1 = input$n1_twoprop * input$p1_twoprop, x2 = input$n2_twoprop * input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = FALSE)
       test_confint <- prop.z.test2(x1 = input$n1_twoprop * input$p1_twoprop, x2 = input$n2_twoprop * input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided", pooled.stderr = FALSE)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste0("\\(n_1 =\\) ", round(test$n1, 3)),
         br(),
@@ -992,7 +1017,7 @@ server <- function(input, output) {
       test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = FALSE)
       test_confint <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided", pooled.stderr = FALSE)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste0("\\(n_1 =\\) ", round(test$n1, 3)),
         br(),
@@ -1048,7 +1073,7 @@ server <- function(input, output) {
       test <- prop.z.test2(x1 = input$n1_twoprop * input$p1_twoprop, x2 = input$n2_twoprop * input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = TRUE)
       test_confint <- prop.z.test2(x1 = input$n1_twoprop * input$p1_twoprop, x2 = input$n2_twoprop * input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided", pooled.stderr = FALSE)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste0("\\(n_1 =\\) ", round(test$n1, 3)),
         br(),
@@ -1108,7 +1133,7 @@ server <- function(input, output) {
       test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = TRUE)
       test_confint <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided", pooled.stderr = FALSE)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste0("\\(n_1 =\\) ", round(test$n1, 3)),
         br(),
@@ -1181,7 +1206,9 @@ server <- function(input, output) {
       test_confint <- varTest(x = dat, sigma.squared = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha)
       test <- varTest(x = dat, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
       withMathJax(
-        paste(c("Your data:", paste(dat, collapse = ", ")), collapse = " "),
+        tags$b("Data"),
+        br(),
+        paste(c(paste(dat, collapse = ", ")), collapse = " "),
         br(),
         paste0("\\(n =\\) ", length(dat)),
         br(),
@@ -1255,7 +1282,7 @@ server <- function(input, output) {
       test_confint <- var.test(x = dat1, y = dat2, ratio = 1, alternative = "two.sided", conf.level = 1 - input$alpha)
       test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative_twovar, conf.level = 1 - input$alpha)
       withMathJax(
-        paste("Your data:"),
+        tags$b("Data"),
         br(),
         paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
         br(),
