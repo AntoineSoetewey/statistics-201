@@ -49,7 +49,23 @@ ui <- shiny::tagList(
           hr(),
           conditionalPanel(
             condition = "input.inference == 'one mean'",
-            textInput("sample_onemean", "Sample", value = "0.9, -0.8, 1.3, -0.3, 1.7", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            radioButtons("input_type_onemean", "Input type:",
+              choices = c("Raw data" = "raw", "Summary statistics" = "summary"),
+              inline = TRUE
+            ),
+            conditionalPanel(
+              condition = "input.input_type_onemean == 'raw'",
+              textInput("sample_onemean", "Sample", value = "0.9, -0.8, 1.3, -0.3, 1.7", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
+            ),
+            conditionalPanel(
+              condition = "input.input_type_onemean == 'summary'",
+              numericInput("n_onemean_sum", "\\(n = \\)", value = 5, min = 2, step = 1),
+              numericInput("xbar_onemean_sum", "\\(\\bar{x} = \\)", value = 0.56, step = 0.01),
+              conditionalPanel(
+                condition = "input.popsd_onemean == 0",
+                numericInput("s2_onemean_sum", "\\(s^2 = \\)", value = 1.063, min = 0, step = 0.01)
+              )
+            ),
             hr(),
             checkboxInput("popsd_onemean", "Variance of the population is known", FALSE),
             conditionalPanel(
@@ -61,8 +77,27 @@ ui <- shiny::tagList(
           ),
           conditionalPanel(
             condition = "input.inference == 'two means (independent samples)'",
-            textInput("sample1_twomeans", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-            textInput("sample2_twomeans", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            radioButtons("input_type_twomeans", "Input type:",
+              choices = c("Raw data" = "raw", "Summary statistics" = "summary"),
+              inline = TRUE
+            ),
+            conditionalPanel(
+              condition = "input.input_type_twomeans == 'raw'",
+              textInput("sample1_twomeans", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+              textInput("sample2_twomeans", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
+            ),
+            conditionalPanel(
+              condition = "input.input_type_twomeans == 'summary'",
+              numericInput("n1_twomeans_sum", "\\(n_1 = \\)", value = 5, min = 2, step = 1),
+              numericInput("n2_twomeans_sum", "\\(n_2 = \\)", value = 5, min = 2, step = 1),
+              numericInput("xbar1_twomeans_sum", "\\(\\bar{x}_1 = \\)", value = 0.22, step = 0.01),
+              numericInput("xbar2_twomeans_sum", "\\(\\bar{x}_2 = \\)", value = 0.06, step = 0.01),
+              conditionalPanel(
+                condition = "input.popsd_twomeans == 0",
+                numericInput("s21_twomeans_sum", "\\(s^2_1 = \\)", value = 0.277, min = 0, step = 0.01),
+                numericInput("s22_twomeans_sum", "\\(s^2_2 = \\)", value = 0.212, min = 0, step = 0.01)
+              )
+            ),
             hr(),
             conditionalPanel(
               condition = "input.popsd_twomeans == 0",
@@ -88,8 +123,24 @@ ui <- shiny::tagList(
           ),
           conditionalPanel(
             condition = "input.inference == 'two means (paired samples)'",
-            textInput("sample1_twomeanspaired", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-            textInput("sample2_twomeanspaired", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+            radioButtons("input_type_twomeanspaired", "Input type:",
+              choices = c("Raw data" = "raw", "Summary statistics" = "summary"),
+              inline = TRUE
+            ),
+            conditionalPanel(
+              condition = "input.input_type_twomeanspaired == 'raw'",
+              textInput("sample1_twomeanspaired", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+              textInput("sample2_twomeanspaired", "Sample 2", value = "0.8, -0.9, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
+            ),
+            conditionalPanel(
+              condition = "input.input_type_twomeanspaired == 'summary'",
+              numericInput("n_twomeanspaired_sum", "\\(n = \\)", value = 5, min = 2, step = 1),
+              numericInput("dbar_twomeanspaired_sum", "\\(\\bar{D} = \\)", value = 0.04, step = 0.01),
+              conditionalPanel(
+                condition = "input.popsd_twomeanspaired == 0",
+                numericInput("s2d_twomeanspaired_sum", "\\(s^2_D = \\)", value = 0.133, min = 0, step = 0.001)
+              )
+            ),
             hr(),
             checkboxInput("popsd_twomeanspaired", "\\( \\sigma^2_D \\) is known", FALSE),
             conditionalPanel(
@@ -171,12 +222,38 @@ ui <- shiny::tagList(
           ),
           conditionalPanel(
             condition = "input.inference == 'one variance'",
-            textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc.")
+            radioButtons("input_type_onevar", "Input type:",
+              choices = c("Raw data" = "raw", "Summary statistics" = "summary"),
+              inline = TRUE
+            ),
+            conditionalPanel(
+              condition = "input.input_type_onevar == 'raw'",
+              textInput("sample_onevar", "Sample", value = "0.9, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 795, 810, 775, 781, 803, 823, 780, etc.")
+            ),
+            conditionalPanel(
+              condition = "input.input_type_onevar == 'summary'",
+              numericInput("n_onevar_sum", "\\(n = \\)", value = 5, min = 2, step = 1),
+              numericInput("s2_onevar_sum", "\\(s^2 = \\)", value = 0.277, min = 0, step = 0.001)
+            )
           ),
           conditionalPanel(
             condition = "input.inference == 'two variances'",
-            textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2, 0.7, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
-            textInput("sample2_twovar", "Sample 2", value = "0.4, -0.3, -0.1, 0.4, 0.1, 0.2, -0.1, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
+            radioButtons("input_type_twovar", "Input type:",
+              choices = c("Raw data" = "raw", "Summary statistics" = "summary"),
+              inline = TRUE
+            ),
+            conditionalPanel(
+              condition = "input.input_type_twovar == 'raw'",
+              textInput("sample1_twovar", "Sample 1", value = "0.9, -0.8, 0.1, -0.3, 0.2, 0.7, -0.8, 0.1, -0.3, 0.2", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc."),
+              textInput("sample2_twovar", "Sample 2", value = "0.4, -0.3, -0.1, 0.4, 0.1, 0.2, -0.1, -0.1, 0.4, 0.1", placeholder = "Enter values separated by a comma with decimals as points, e.g. 4.2, 4.4, 5, 5.03, etc.")
+            ),
+            conditionalPanel(
+              condition = "input.input_type_twovar == 'summary'",
+              numericInput("n1_twovar_sum", "\\(n_1 = \\)", value = 10, min = 2, step = 1),
+              numericInput("n2_twovar_sum", "\\(n_2 = \\)", value = 10, min = 2, step = 1),
+              numericInput("s21_twovar_sum", "\\(s^2_1 = \\)", value = 0.237, min = 0, step = 0.001),
+              numericInput("s22_twovar_sum", "\\(s^2_2 = \\)", value = 0.059, min = 0, step = 0.001)
+            )
           ),
           hr(),
           tags$b("Null hypothesis"),
@@ -433,23 +510,127 @@ server <- function(input, output) {
     return(list(x = x, n = n, estimate = phat, null.value = p0, stderr = SE.phat, statistic = ts.z, p.value = p.val))
   }
 
+  # Helper: one-sample t-test from summary statistics
+  t_test1_sum <- function(n, xbar, s2, mu0, alpha, alternative) {
+    s <- sqrt(s2)
+    df <- n - 1
+    SE <- s / sqrt(n)
+    t_stat <- (xbar - mu0) / SE
+    p_val <- if (alternative == "two.sided") 2 * pt(abs(t_stat), df = df, lower.tail = FALSE)
+              else if (alternative == "less") pt(t_stat, df = df, lower.tail = TRUE)
+              else pt(t_stat, df = df, lower.tail = FALSE)
+    t_two <- qt(alpha / 2, df = df, lower.tail = FALSE)
+    t_one <- qt(alpha, df = df, lower.tail = FALSE)
+    ci <- if (alternative == "two.sided") c(xbar - t_two * SE, xbar + t_two * SE)
+          else if (alternative == "greater") c(xbar - t_one * SE, Inf)
+          else c(-Inf, xbar + t_one * SE)
+    list(estimate = xbar, null.value = mu0, stderr = SE, statistic = t_stat,
+         parameter = df, p.value = p_val, conf.int = ci, alternative = alternative)
+  }
+
+  # Helper: two-sample t-test from summary statistics
+  t_test2_sum <- function(n1, n2, xbar1, xbar2, s21, s22, var_equal, mu0, alpha, alternative) {
+    if (var_equal) {
+      df <- n1 + n2 - 2
+      SE <- sqrt(((n1 - 1) * s21 + (n2 - 1) * s22) / df) * sqrt(1 / n1 + 1 / n2)
+    } else {
+      df <- (s21 / n1 + s22 / n2)^2 / ((s21 / n1)^2 / (n1 - 1) + (s22 / n2)^2 / (n2 - 1))
+      SE <- sqrt(s21 / n1 + s22 / n2)
+    }
+    t_stat <- (xbar1 - xbar2 - mu0) / SE
+    p_val <- if (alternative == "two.sided") 2 * pt(abs(t_stat), df = df, lower.tail = FALSE)
+              else if (alternative == "less") pt(t_stat, df = df, lower.tail = TRUE)
+              else pt(t_stat, df = df, lower.tail = FALSE)
+    t_two <- qt(alpha / 2, df = df, lower.tail = FALSE)
+    t_one <- qt(alpha, df = df, lower.tail = FALSE)
+    diff_est <- xbar1 - xbar2
+    ci <- if (alternative == "two.sided") c(diff_est - t_two * SE, diff_est + t_two * SE)
+          else if (alternative == "greater") c(diff_est - t_one * SE, Inf)
+          else c(-Inf, diff_est + t_one * SE)
+    list(estimate = c(xbar1, xbar2), null.value = mu0, stderr = SE, statistic = t_stat,
+         parameter = df, p.value = p_val, conf.int = ci, alternative = alternative)
+  }
+
+  # Helper: chi-squared variance test from summary statistics
+  vartest_sum <- function(n, s2, sigma2_0, alpha, alternative) {
+    df <- n - 1
+    chi2_stat <- (n - 1) * s2 / sigma2_0
+    p_val <- if (alternative == "two.sided") {
+      2 * min(pchisq(chi2_stat, df = df, lower.tail = TRUE), pchisq(chi2_stat, df = df, lower.tail = FALSE))
+    } else if (alternative == "less") {
+      pchisq(chi2_stat, df = df, lower.tail = TRUE)
+    } else {
+      pchisq(chi2_stat, df = df, lower.tail = FALSE)
+    }
+    ci <- if (alternative == "two.sided") {
+      c((n - 1) * s2 / qchisq(alpha / 2, df = df, lower.tail = FALSE),
+        (n - 1) * s2 / qchisq(alpha / 2, df = df, lower.tail = TRUE))
+    } else if (alternative == "greater") {
+      c((n - 1) * s2 / qchisq(alpha, df = df, lower.tail = FALSE), Inf)
+    } else {
+      c(0, (n - 1) * s2 / qchisq(alpha, df = df, lower.tail = TRUE))
+    }
+    list(estimate = s2, null.value = sigma2_0, statistic = chi2_stat,
+         parameters = df, p.value = p_val, conf.int = ci, alternative = alternative)
+  }
+
+  # Helper: F-test for two variances from summary statistics
+  ftest_sum <- function(n1, n2, s21, s22, alpha, alternative) {
+    df1 <- n1 - 1
+    df2 <- n2 - 1
+    F_stat <- s21 / s22
+    p_val <- if (alternative == "two.sided") {
+      2 * min(pf(F_stat, df1 = df1, df2 = df2, lower.tail = TRUE), pf(F_stat, df1 = df1, df2 = df2, lower.tail = FALSE))
+    } else if (alternative == "greater") {
+      pf(F_stat, df1 = df1, df2 = df2, lower.tail = FALSE)
+    } else {
+      pf(F_stat, df1 = df1, df2 = df2, lower.tail = TRUE)
+    }
+    f_two <- qf(alpha / 2, df1 = df1, df2 = df2, lower.tail = FALSE)
+    f_one <- qf(alpha, df1 = df1, df2 = df2, lower.tail = FALSE)
+    ci <- if (alternative == "two.sided") c(F_stat / f_two, F_stat * f_two)
+          else if (alternative == "greater") c(F_stat / f_one, Inf)
+          else c(0, F_stat * f_one)
+    list(estimate = F_stat, null.value = 1, statistic = F_stat,
+         parameter = c(df1, df2), p.value = p_val, conf.int = ci, alternative = alternative)
+  }
+
   output$results_onemean <- renderUI({
-    dat <- extract(input$sample_onemean)
-    if (anyNA(dat) | length(dat) < 2) {
-      "Invalid input or not enough observations"
-    } else if (input$inference == "one mean" & input$popsd_onemean == FALSE) {
-      test_confint <- t.test(x = dat, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha)
-      test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+    # Extract summary statistics based on input type
+    if (input$input_type_onemean == "raw") {
+      dat <- extract(input$sample_onemean)
+      if (anyNA(dat) | length(dat) < 2) return("Invalid input or not enough observations")
+      n_val <- length(dat)
+      xbar_val <- mean(dat)
+      s_val <- sd(dat)
+      s2_val <- var(dat)
+    } else {
+      n_val <- input$n_onemean_sum
+      xbar_val <- input$xbar_onemean_sum
+      s2_val <- input$s2_onemean_sum
+      s_val <- sqrt(max(s2_val, 0))
+      if (is.na(n_val) | n_val < 2) return("Invalid input: n must be \u2265 2")
+    }
+
+    if (input$inference == "one mean" & input$popsd_onemean == FALSE) {
+      if (input$input_type_onemean == "raw") {
+        test_confint <- t.test(x = dat, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha)
+        test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+      } else {
+        if (is.na(s2_val) | s2_val < 0) return("Invalid input: s\u00b2 must be \u2265 0")
+        test_confint <- t_test1_sum(n_val, xbar_val, s2_val, input$h0, input$alpha, "two.sided")
+        test <- t_test1_sum(n_val, xbar_val, s2_val, input$h0, input$alpha, input$alternative)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c(paste(dat, collapse = ", ")), collapse = " "),
+        if (input$input_type_onemean == "raw") paste(c(paste(dat, collapse = ", ")), collapse = " "),
+        if (input$input_type_onemean == "raw") br(),
+        paste0("\\(n =\\) ", n_val),
         br(),
-        paste0("\\(n =\\) ", length(dat)),
+        paste0("\\(\\bar{x} =\\) ", round(xbar_val, 3)),
         br(),
-        paste0("\\(\\bar{x} =\\) ", round(mean(dat), 3)),
-        br(),
-        paste0("\\(s =\\) ", round(sd(dat), 3)),
+        paste0("\\(s =\\) ", round(s_val, 3)),
         br(),
         br(),
         tags$b("Confidence interval"),
@@ -458,10 +639,10 @@ server <- function(input, output) {
         paste0(
           (1 - input$alpha) * 100,
           ifelse(input$alternative == "two.sided",
-            paste0("% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr * sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            paste0("% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(s_val, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(\\mu = \\bar{x} - t_{\\alpha, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(\\mu = \\bar{x} + t_{\\alpha, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
+              paste0("% CI for \\(\\mu = \\bar{x} - t_{\\alpha, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_val, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(\\mu = \\bar{x} + t_{\\alpha, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_val, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
             )
           )
         ),
@@ -492,15 +673,19 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean is ", "we do not reject the null hypothesis that the true mean is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "one mean" & input$popsd_onemean == TRUE) {
-      test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      if (input$input_type_onemean == "raw") {
+        test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      } else {
+        test <- t.test2(x = rep(xbar_val, n_val), V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c(paste(dat, collapse = ", ")), collapse = " "),
+        if (input$input_type_onemean == "raw") paste(c(paste(dat, collapse = ", ")), collapse = " "),
+        if (input$input_type_onemean == "raw") br(),
+        paste0("\\(n =\\) ", n_val),
         br(),
-        paste0("\\(n =\\) ", length(dat)),
-        br(),
-        paste0("\\(\\bar{x} =\\) ", round(mean(dat), 3)),
+        paste0("\\(\\bar{x} =\\) ", round(xbar_val, 3)),
         br(),
         paste0("\\(\\sigma =\\) ", round(sqrt(input$sigma2_onemean), 3)),
         br(),
@@ -510,7 +695,7 @@ server <- function(input, output) {
         br(),
         paste0(
           (1 - input$alpha) * 100, "% Confidence Interval for \\(\\mu = \\bar{x} \\pm z_{\\alpha/2} \\dfrac{\\sigma}{\\sqrt{n}} = \\) ",
-          round(test$mean, 3), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ",
+          round(test$mean, 3), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ",
           "[", round(test$LCL, 3), "; ", round(test$UCL, 3), "]"
         ),
         br(),
@@ -521,7 +706,7 @@ server <- function(input, output) {
         br(),
         paste0(
           "2. Test statistic : \\(z_{obs} = \\dfrac{\\bar{x} - \\mu_0}{\\sigma / \\sqrt{n}} = \\) ",
-          "(", round(test$mean, 3), ifelse(input$h0 >= 0, paste0(" - ", input$h0), paste0(" + ", abs(input$h0))), ") / ", round(test$sigma / sqrt(length(dat)), 3), " \\( = \\) ",
+          "(", round(test$mean, 3), ifelse(input$h0 >= 0, paste0(" - ", input$h0), paste0(" + ", abs(input$h0))), ") / ", round(test$sigma / sqrt(n_val), 3), " \\( = \\) ",
           round(test$statistic, 3)
         ),
         br(),
@@ -545,31 +730,48 @@ server <- function(input, output) {
   })
 
   output$results_twomeanspaired <- renderUI({
-    dat1 <- extract(input$sample1_twomeanspaired)
-    dat2 <- extract(input$sample2_twomeanspaired)
-    if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) {
-      "Invalid input or not enough observations"
-    } else if (length(dat1) != length(dat2)) {
-      "Number of observations must be equal in the two samples"
-    } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == FALSE) {
-      test_confint <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = TRUE)
-      test <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = TRUE)
+    if (input$input_type_twomeanspaired == "raw") {
+      dat1 <- extract(input$sample1_twomeanspaired)
+      dat2 <- extract(input$sample2_twomeanspaired)
+      if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) return("Invalid input or not enough observations")
+      if (length(dat1) != length(dat2)) return("Number of observations must be equal in the two samples")
+      n_val <- length(dat1)
+      dbar_val <- mean(dat2 - dat1)
+      s2d_val <- var(dat2 - dat1)
+      sd_val <- sd(dat2 - dat1)
+    } else {
+      n_val <- input$n_twomeanspaired_sum
+      dbar_val <- input$dbar_twomeanspaired_sum
+      s2d_val <- input$s2d_twomeanspaired_sum
+      sd_val <- sqrt(max(s2d_val, 0))
+      if (is.na(n_val) | n_val < 2) return("Invalid input: n must be \u2265 2")
+    }
+
+    if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == FALSE) {
+      if (input$input_type_twomeanspaired == "raw") {
+        test_confint <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = TRUE)
+        test <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = TRUE)
+      } else {
+        if (is.na(s2d_val) | s2d_val < 0) return("Invalid input: s\u00b2_D must be \u2265 0")
+        test_confint <- t_test1_sum(n_val, dbar_val, s2d_val, input$h0, input$alpha, "two.sided")
+        test <- t_test1_sum(n_val, dbar_val, s2d_val, input$h0, input$alpha, input$alternative)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") br(),
+        if (input$input_type_twomeanspaired == "raw") paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") br(),
+        if (input$input_type_twomeanspaired == "raw") paste(c("Difference \\((D) = Sample_2 - Sample_1=\\)", paste(dat2 - dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") br(),
+        paste0("Number of pairs \\(n =\\) ", n_val),
         br(),
-        paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        paste0("\\(\\bar{D} =\\) ", round(dbar_val, 3)),
         br(),
-        paste(c("Difference \\((D) = Sample_2 - Sample_1=\\)", paste(dat2 - dat1, collapse = ", ")), collapse = " "),
+        paste0("\\(s^2_D =\\) ", round(s2d_val, 3)),
         br(),
-        paste0("Number of pairs \\(n =\\) ", length(dat1)),
-        br(),
-        paste0("\\(\\bar{D} =\\) ", round(mean(dat2 - dat1), 3)),
-        br(),
-        paste0("\\(s^2_D =\\) ", round(var(dat2 - dat1), 3)),
-        br(),
-        paste0("\\(s_D =\\) ", round(sd(dat2 - dat1), 3)),
+        paste0("\\(s_D =\\) ", round(sd_val, 3)),
         br(),
         br(),
         tags$b("Confidence interval"),
@@ -578,10 +780,10 @@ server <- function(input, output) {
         paste0(
           (1 - input$alpha) * 100,
           ifelse(input$alternative == "two.sided",
-            paste0("% CI for \\(\\mu_D = \\bar{D} \\pm t_{\\alpha/2, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr * sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            paste0("% CI for \\(\\mu_D = \\bar{D} \\pm t_{\\alpha/2, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(sd_val, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(\\mu_D = \\bar{D} - t_{\\alpha, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(\\mu_D = \\bar{D} + t_{\\alpha, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
+              paste0("% CI for \\(\\mu_D = \\bar{D} - t_{\\alpha, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(sd_val, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(\\mu_D = \\bar{D} + t_{\\alpha, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(sd_val, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
             )
           )
         ),
@@ -612,19 +814,23 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean of the difference is equal to ", "we do not reject the null hypothesis that the true mean of the difference is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == TRUE) {
-      test <- t.test2(x = dat2 - dat1, V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      if (input$input_type_twomeanspaired == "raw") {
+        test <- t.test2(x = dat2 - dat1, V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      } else {
+        test <- t.test2(x = rep(dbar_val, n_val), V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") br(),
+        if (input$input_type_twomeanspaired == "raw") paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") br(),
+        if (input$input_type_twomeanspaired == "raw") paste(c("Difference \\((D) = Sample_2 - Sample_1=\\)", paste(dat2 - dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeanspaired == "raw") br(),
+        paste0("Number of pairs \\(n =\\) ", n_val),
         br(),
-        paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
-        br(),
-        paste(c("Difference \\((D) = Sample_2 - Sample_1=\\)", paste(dat2 - dat1, collapse = ", ")), collapse = " "),
-        br(),
-        paste0("Number of pairs \\(n =\\) ", length(dat1)),
-        br(),
-        paste0("\\(\\bar{D} =\\) ", round(mean(dat2 - dat1), 3)),
+        paste0("\\(\\bar{D} =\\) ", round(dbar_val, 3)),
         br(),
         paste0("\\(\\sigma^2_D =\\) ", round(input$sigma2_twomeanspaired, 3)),
         br(),
@@ -636,7 +842,7 @@ server <- function(input, output) {
         br(),
         paste0(
           (1 - input$alpha) * 100, "% Confidence Interval for \\(\\mu_D = \\bar{D} \\pm z_{\\alpha/2} \\dfrac{\\sigma_D}{\\sqrt{n}} = \\) ",
-          round(test$mean, 3), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ",
+          round(test$mean, 3), "  \\( \\pm \\)", " \\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test$sigma, 3), " / ", round(sqrt(n_val), 3), "\\( ) \\) ", "\\( = \\) ",
           "[", round(test$LCL, 3), "; ", round(test$UCL, 3), "]"
         ),
         br(),
@@ -647,7 +853,7 @@ server <- function(input, output) {
         br(),
         paste0(
           "2. Test statistic : \\(z_{obs} = \\dfrac{\\bar{D} - \\mu_0}{\\sigma_D / \\sqrt{n}} = \\) ",
-          "(", round(test$mean, 3), ifelse(input$h0 >= 0, paste0(" - ", input$h0), paste0(" + ", abs(input$h0))), ") / ", round(test$sigma / sqrt(length(dat1)), 3), " \\( = \\) ",
+          "(", round(test$mean, 3), ifelse(input$h0 >= 0, paste0(" - ", input$h0), paste0(" + ", abs(input$h0))), ") / ", round(test$sigma / sqrt(n_val), 3), " \\( = \\) ",
           round(test$statistic, 3)
         ),
         br(),
@@ -671,32 +877,47 @@ server <- function(input, output) {
   })
 
   output$results_twomeans <- renderUI({
-    dat1 <- extract(input$sample1_twomeans)
-    dat2 <- extract(input$sample2_twomeans)
-    if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) {
-      "Invalid input or not enough observations"
-    } else if (input$inference == "two means (independent samples)" & input$popsd_twomeans == FALSE & input$var.equal == TRUE) {
-      test_confint <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = FALSE, var.equal = TRUE)
-      test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = TRUE)
-      s_p <- sqrt(((length(dat1) - 1) * var(dat1) + (length(dat2) - 1) * var(dat2)) / test_confint$parameter)
+    if (input$input_type_twomeans == "raw") {
+      dat1 <- extract(input$sample1_twomeans)
+      dat2 <- extract(input$sample2_twomeans)
+      if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) return("Invalid input or not enough observations")
+      n1_val <- length(dat1); n2_val <- length(dat2)
+      xbar1_val <- mean(dat1); xbar2_val <- mean(dat2)
+      s21_val <- var(dat1); s22_val <- var(dat2)
+    } else {
+      n1_val <- input$n1_twomeans_sum; n2_val <- input$n2_twomeans_sum
+      xbar1_val <- input$xbar1_twomeans_sum; xbar2_val <- input$xbar2_twomeans_sum
+      s21_val <- input$s21_twomeans_sum; s22_val <- input$s22_twomeans_sum
+      if (is.na(n1_val) | n1_val < 2 | is.na(n2_val) | n2_val < 2) return("Invalid input: n must be \u2265 2")
+    }
+
+    if (input$inference == "two means (independent samples)" & input$popsd_twomeans == FALSE & input$var.equal == TRUE) {
+      if (input$input_type_twomeans == "raw") {
+        test_confint <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = FALSE, var.equal = TRUE)
+        test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = TRUE)
+      } else {
+        test_confint <- t_test2_sum(n1_val, n2_val, xbar1_val, xbar2_val, s21_val, s22_val, TRUE, input$h0, input$alpha, "two.sided")
+        test <- t_test2_sum(n1_val, n2_val, xbar1_val, xbar2_val, s21_val, s22_val, TRUE, input$h0, input$alpha, input$alternative)
+      }
+      s_p <- sqrt(((n1_val - 1) * s21_val + (n2_val - 1) * s22_val) / (n1_val + n2_val - 2))
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") br(),
+        if (input$input_type_twomeans == "raw") paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") br(),
+        paste0("\\(n_1 =\\) ", n1_val),
         br(),
-        paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        paste0("\\(n_2 =\\) ", n2_val),
         br(),
-        paste0("\\(n_1 =\\) ", length(dat1)),
+        paste0("\\(\\bar{x}_1 =\\) ", round(xbar1_val, 3)),
         br(),
-        paste0("\\(n_2 =\\) ", length(dat2)),
+        paste0("\\(\\bar{x}_2 =\\) ", round(xbar2_val, 3)),
         br(),
-        paste0("\\(\\bar{x}_1 =\\) ", round(mean(dat1), 3)),
+        paste0("\\(s^2_1 =\\) ", round(s21_val, 3)),
         br(),
-        paste0("\\(\\bar{x}_2 =\\) ", round(mean(dat2), 3)),
-        br(),
-        paste0("\\(s^2_1 =\\) ", round(var(dat1), 3)),
-        br(),
-        paste0("\\(s^2_2 =\\) ", round(var(dat2), 3)),
+        paste0("\\(s^2_2 =\\) ", round(s22_val, 3)),
         br(),
         br(),
         tags$b("Confidence interval"),
@@ -710,10 +931,10 @@ server <- function(input, output) {
         paste0(
           "\\( \\Rightarrow \\)", (1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\) ",
           ifelse(input$alternative == "two.sided",
-            paste0(round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / length(dat1) + 1 / length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            paste0(round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / n1_val + 1 / n2_val), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( - \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / length(dat1) + 1 / length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
-              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( + \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / length(dat1) + 1 / length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
+              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( - \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / n1_val + 1 / n2_val), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( + \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / n1_val + 1 / n2_val), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
             )
           )
         ),
@@ -725,7 +946,7 @@ server <- function(input, output) {
         br(),
         paste0(
           "2. Test statistic : \\(t_{obs} = \\dfrac{(\\bar{x}_1 - \\bar{x}_2) - (\\mu_1 - \\mu_2)}{s_p \\sqrt{\\frac{1}{n_1} + \\frac{1}{n_2}}} = \\) ",
-          "(", round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / (", round(s_p, 3), " * ", round(sqrt((1 / length(dat1)) + (1 / length(dat2))), 3), ") \\( = \\) ",
+          "(", round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), ifelse(test$null.value >= 0, paste0(" - ", test$null.value), paste0(" + ", abs(test$null.value))), ") / (", round(s_p, 3), " * ", round(sqrt(1 / n1_val + 1 / n2_val), 3), ") \\( = \\) ",
           round(test$statistic, 3)
         ),
         br(),
@@ -744,26 +965,31 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in means is ", "we do not reject the null hypothesis that the true difference in means is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "two means (independent samples)" & input$popsd_twomeans == FALSE & input$var.equal == FALSE) {
-      test_confint <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
-      test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
+      if (input$input_type_twomeans == "raw") {
+        test_confint <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
+        test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
+      } else {
+        test_confint <- t_test2_sum(n1_val, n2_val, xbar1_val, xbar2_val, s21_val, s22_val, FALSE, input$h0, input$alpha, "two.sided")
+        test <- t_test2_sum(n1_val, n2_val, xbar1_val, xbar2_val, s21_val, s22_val, FALSE, input$h0, input$alpha, input$alternative)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") br(),
+        if (input$input_type_twomeans == "raw") paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") br(),
+        paste0("\\(n_1 =\\) ", n1_val),
         br(),
-        paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        paste0("\\(n_2 =\\) ", n2_val),
         br(),
-        paste0("\\(n_1 =\\) ", length(dat1)),
+        paste0("\\(\\bar{x}_1 =\\) ", round(xbar1_val, 3)),
         br(),
-        paste0("\\(n_2 =\\) ", length(dat2)),
+        paste0("\\(\\bar{x}_2 =\\) ", round(xbar2_val, 3)),
         br(),
-        paste0("\\(\\bar{x}_1 =\\) ", round(mean(dat1), 3)),
+        paste0("\\(s^2_1 =\\) ", round(s21_val, 3)),
         br(),
-        paste0("\\(\\bar{x}_2 =\\) ", round(mean(dat2), 3)),
-        br(),
-        paste0("\\(s^2_1 =\\) ", round(var(dat1), 3)),
-        br(),
-        paste0("\\(s^2_2 =\\) ", round(var(dat2), 3)),
+        paste0("\\(s^2_2 =\\) ", round(s22_val, 3)),
         br(),
         br(),
         tags$b("Confidence interval"),
@@ -786,7 +1012,7 @@ server <- function(input, output) {
         ),
         br(),
         br(),
-        tags$em(paste0("Note: for simplicity, the number of degrees of freedom is sometimes approximated as df = \\(min(n_1 - 1, n_2 - 1) \\), so in this case df = ", min(length(dat1) - 1, length(dat2) - 1), ".")),
+        tags$em(paste0("Note: for simplicity, the number of degrees of freedom is sometimes approximated as df = \\(min(n_1 - 1, n_2 - 1) \\), so in this case df = ", min(n1_val - 1, n2_val - 1), ".")),
         br(),
         br(),
         tags$b("Hypothesis test"),
@@ -814,21 +1040,25 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in means is ", "we do not reject the null hypothesis that the true difference in means is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "two means (independent samples)" & input$popsd_twomeans == TRUE) {
-      test <- t.test3(x = dat1, y = dat2, V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      if (input$input_type_twomeans == "raw") {
+        test <- t.test3(x = dat1, y = dat2, V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      } else {
+        test <- t.test3(x = rep(xbar1_val, n1_val), y = rep(xbar2_val, n2_val), V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") br(),
+        if (input$input_type_twomeans == "raw") paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        if (input$input_type_twomeans == "raw") br(),
+        paste0("\\(n_1 =\\) ", n1_val),
         br(),
-        paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        paste0("\\(n_2 =\\) ", n2_val),
         br(),
-        paste0("\\(n_1 =\\) ", length(dat1)),
+        paste0("\\(\\bar{x}_1 =\\) ", round(xbar1_val, 3)),
         br(),
-        paste0("\\(n_2 =\\) ", length(dat2)),
-        br(),
-        paste0("\\(\\bar{x}_1 =\\) ", round(mean(dat1), 3)),
-        br(),
-        paste0("\\(\\bar{x}_2 =\\) ", round(mean(dat2), 3)),
+        paste0("\\(\\bar{x}_2 =\\) ", round(xbar2_val, 3)),
         br(),
         paste0("\\(\\sigma^2_1 =\\) ", round(input$sigma21_twomeans, 3)),
         br(),
@@ -1249,26 +1479,40 @@ server <- function(input, output) {
   })
 
   output$results_onevar <- renderUI({
-    dat <- extract(input$sample_onevar)
-    if (anyNA(dat) | length(dat) < 2) {
-      "Invalid input or not enough observations"
-    } else if (input$h0 <= 0) {
-      withMathJax(
-        sprintf("\\( \\sigma^2_0 \\) must be > 0")
-      )
-    } else if (input$inference == "one variance") {
-      test_confint <- varTest(x = dat, sigma.squared = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha)
-      test <- varTest(x = dat, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+    if (input$input_type_onevar == "raw") {
+      dat <- extract(input$sample_onevar)
+      if (anyNA(dat) | length(dat) < 2) return("Invalid input or not enough observations")
+      n_val <- length(dat)
+      s2_val <- var(dat)
+      s_val <- sd(dat)
+    } else {
+      n_val <- input$n_onevar_sum
+      s2_val <- input$s2_onevar_sum
+      s_val <- sqrt(max(s2_val, 0))
+      if (is.na(n_val) | n_val < 2) return("Invalid input: n must be \u2265 2")
+      if (is.na(s2_val) | s2_val < 0) return("Invalid input: s\u00b2 must be \u2265 0")
+    }
+    if (input$h0 <= 0) {
+      return(withMathJax(sprintf("\\( \\sigma^2_0 \\) must be > 0")))
+    }
+    if (input$inference == "one variance") {
+      if (input$input_type_onevar == "raw") {
+        test_confint <- varTest(x = dat, sigma.squared = input$h0, alternative = "two.sided", conf.level = 1 - input$alpha)
+        test <- varTest(x = dat, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+      } else {
+        test_confint <- vartest_sum(n_val, s2_val, input$h0, input$alpha, "two.sided")
+        test <- vartest_sum(n_val, s2_val, input$h0, input$alpha, input$alternative)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c(paste(dat, collapse = ", ")), collapse = " "),
+        if (input$input_type_onevar == "raw") paste(c(paste(dat, collapse = ", ")), collapse = " "),
+        if (input$input_type_onevar == "raw") br(),
+        paste0("\\(n =\\) ", n_val),
         br(),
-        paste0("\\(n =\\) ", length(dat)),
+        paste0("\\(s^2 =\\) ", round(s2_val, 3)),
         br(),
-        paste0("\\(s^2 =\\) ", round(var(dat), 3)),
-        br(),
-        paste0("\\(s =\\) ", round(sd(dat), 3)),
+        paste0("\\(s =\\) ", round(s_val, 3)),
         br(),
         br(),
         tags$b("Confidence interval"),
@@ -1277,10 +1521,10 @@ server <- function(input, output) {
         paste0(
           (1 - input$alpha) * 100,
           ifelse(input$alternative == "two.sided",
-            paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ", "[(", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = FALSE), 3), ") ; (", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ", "[(", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = FALSE), 3), ") ; (", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha, n-1}} ; +\\infty \\Bigg) = \\) ", "[(", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3), ") ; +\\(\\infty\\)) = ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(\\sigma^2 = \\Bigg( 0 ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha, n-1}} \\Bigg] = \\) ", "(0 ; (", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[0; ", round(test$conf.int[2], 3), "]")
+              paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha, n-1}} ; +\\infty \\Bigg) = \\) ", "[(", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3), ") ; +\\(\\infty\\)) = ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(\\sigma^2 = \\Bigg( 0 ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha, n-1}} \\Bigg] = \\) ", "(0 ; (", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[0; ", round(test$conf.int[2], 3), "]")
             )
           )
         ),
@@ -1292,7 +1536,7 @@ server <- function(input, output) {
         br(),
         paste0(
           "2. Test statistic : \\(\\chi^2_{obs} = \\dfrac{(n-1)s^2}{\\sigma^2_0} = \\) ",
-          "[(", length(dat), " - 1) * ", round(test$estimate, 3), "] / ", test$null.value, " \\( = \\) ",
+          "[(", n_val, " - 1) * ", round(test$estimate, 3), "] / ", test$null.value, " \\( = \\) ",
           round(test$statistic, 3)
         ),
         br(),
@@ -1329,35 +1573,44 @@ server <- function(input, output) {
   })
 
   output$results_twovar <- renderUI({
-    dat1 <- extract(input$sample1_twovar)
-    dat2 <- extract(input$sample2_twovar)
-    if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) {
-      "Invalid input or not enough observations"
-    } else if (input$h0 <= 0) {
-      withMathJax(
-        sprintf("\\( \\sigma^2_1 - \\sigma^2_2 \\) must be > 0")
-      )
-    } else if (input$inference == "two variances") {
-      test_confint <- var.test(x = dat1, y = dat2, ratio = 1, alternative = "two.sided", conf.level = 1 - input$alpha)
-      test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative_twovar, conf.level = 1 - input$alpha)
+    if (input$input_type_twovar == "raw") {
+      dat1 <- extract(input$sample1_twovar)
+      dat2 <- extract(input$sample2_twovar)
+      if (anyNA(dat1) | length(dat1) < 2 | anyNA(dat2) | length(dat2) < 2) return("Invalid input or not enough observations")
+      n1_val <- length(dat1); n2_val <- length(dat2)
+      s21_val <- var(dat1); s22_val <- var(dat2)
+    } else {
+      n1_val <- input$n1_twovar_sum; n2_val <- input$n2_twovar_sum
+      s21_val <- input$s21_twovar_sum; s22_val <- input$s22_twovar_sum
+      if (is.na(n1_val) | n1_val < 2 | is.na(n2_val) | n2_val < 2) return("Invalid input: n must be \u2265 2")
+      if (is.na(s21_val) | s21_val < 0 | is.na(s22_val) | s22_val < 0) return("Invalid input: s\u00b2 must be \u2265 0")
+    }
+    if (input$inference == "two variances") {
+      if (input$input_type_twovar == "raw") {
+        test_confint <- var.test(x = dat1, y = dat2, ratio = 1, alternative = "two.sided", conf.level = 1 - input$alpha)
+        test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative_twovar, conf.level = 1 - input$alpha)
+      } else {
+        test_confint <- ftest_sum(n1_val, n2_val, s21_val, s22_val, input$alpha, "two.sided")
+        test <- ftest_sum(n1_val, n2_val, s21_val, s22_val, input$alpha, input$alternative_twovar)
+      }
       withMathJax(
         tags$b("Data"),
         br(),
-        paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twovar == "raw") paste(c("\\(Sample_1=\\)", paste(dat1, collapse = ", ")), collapse = " "),
+        if (input$input_type_twovar == "raw") br(),
+        if (input$input_type_twovar == "raw") paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        if (input$input_type_twovar == "raw") br(),
+        paste0("\\(n_1 =\\) ", n1_val),
         br(),
-        paste(c("\\(Sample_2=\\)", paste(dat2, collapse = ", ")), collapse = " "),
+        paste0("\\(n_2 =\\) ", n2_val),
         br(),
-        paste0("\\(n_1 =\\) ", length(dat1)),
+        paste0("\\(s^2_1 =\\) ", round(s21_val, 3)),
         br(),
-        paste0("\\(n_2 =\\) ", length(dat2)),
+        paste0("\\(s^2_2 =\\) ", round(s22_val, 3)),
         br(),
-        paste0("\\(s^2_1 =\\) ", round(var(dat1), 3)),
+        paste0("\\(s_1 =\\) ", round(sqrt(s21_val), 3)),
         br(),
-        paste0("\\(s^2_2 =\\) ", round(var(dat2), 3)),
-        br(),
-        paste0("\\(s_1 =\\) ", round(sd(dat1), 3)),
-        br(),
-        paste0("\\(s_2 =\\) ", round(sd(dat2), 3)),
+        paste0("\\(s_2 =\\) ", round(sqrt(s22_val), 3)),
         br(),
         br(),
         tags$b("Confidence interval"),
@@ -1393,7 +1646,7 @@ server <- function(input, output) {
         br(),
         paste0(
           "2. Test statistic : \\(F_{obs} = \\dfrac{s^2_1}{s^2_2} = \\) ",
-          "[", round(var(dat1), 3), " / ", round(var(dat2), 3), "]", " \\( = \\) ",
+          "[", round(s21_val, 3), " / ", round(s22_val, 3), "]", " \\( = \\) ",
           round(test$statistic, 3)
         ),
         br(),
@@ -1433,8 +1686,12 @@ server <- function(input, output) {
 
   output$plot <- renderPlot({
     if (input$inference == "one mean" & input$popsd_onemean == FALSE) {
-      dat <- extract(input$sample_onemean)
-      test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+      if (input$input_type_onemean == "raw") {
+        dat <- extract(input$sample_onemean)
+        test <- t.test(x = dat, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+      } else {
+        test <- t_test1_sum(input$n_onemean_sum, input$xbar_onemean_sum, input$s2_onemean_sum, input$h0, input$alpha, input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dt(x, df = test$parameter)
@@ -1466,8 +1723,12 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "one mean" & input$popsd_onemean == TRUE) {
-      dat <- extract(input$sample_onemean)
-      test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      if (input$input_type_onemean == "raw") {
+        dat <- extract(input$sample_onemean)
+        test <- t.test2(x = dat, V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      } else {
+        test <- t.test2(x = rep(input$xbar_onemean_sum, input$n_onemean_sum), V = input$sigma2_onemean, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dnorm(x, mean = 0, sd = 1)
@@ -1499,9 +1760,13 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "two means (independent samples)" & input$popsd_twomeans == FALSE & input$var.equal == TRUE) {
-      dat1 <- extract(input$sample1_twomeans)
-      dat2 <- extract(input$sample2_twomeans)
-      test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = TRUE)
+      if (input$input_type_twomeans == "raw") {
+        dat1 <- extract(input$sample1_twomeans)
+        dat2 <- extract(input$sample2_twomeans)
+        test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = TRUE)
+      } else {
+        test <- t_test2_sum(input$n1_twomeans_sum, input$n2_twomeans_sum, input$xbar1_twomeans_sum, input$xbar2_twomeans_sum, input$s21_twomeans_sum, input$s22_twomeans_sum, TRUE, input$h0, input$alpha, input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dt(x, df = test$parameter)
@@ -1533,9 +1798,13 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "two means (independent samples)" & input$popsd_twomeans == FALSE & input$var.equal == FALSE) {
-      dat1 <- extract(input$sample1_twomeans)
-      dat2 <- extract(input$sample2_twomeans)
-      test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
+      if (input$input_type_twomeans == "raw") {
+        dat1 <- extract(input$sample1_twomeans)
+        dat2 <- extract(input$sample2_twomeans)
+        test <- t.test(x = dat1, y = dat2, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = FALSE, var.equal = FALSE)
+      } else {
+        test <- t_test2_sum(input$n1_twomeans_sum, input$n2_twomeans_sum, input$xbar1_twomeans_sum, input$xbar2_twomeans_sum, input$s21_twomeans_sum, input$s22_twomeans_sum, FALSE, input$h0, input$alpha, input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dt(x, df = test$parameter)
@@ -1567,9 +1836,13 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "two means (independent samples)" & input$popsd_twomeans == TRUE) {
-      dat1 <- extract(input$sample1_twomeans)
-      dat2 <- extract(input$sample2_twomeans)
-      test <- t.test3(x = dat1, y = dat2, V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      if (input$input_type_twomeans == "raw") {
+        dat1 <- extract(input$sample1_twomeans)
+        dat2 <- extract(input$sample2_twomeans)
+        test <- t.test3(x = dat1, y = dat2, V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      } else {
+        test <- t.test3(x = rep(input$xbar1_twomeans_sum, input$n1_twomeans_sum), y = rep(input$xbar2_twomeans_sum, input$n2_twomeans_sum), V1 = input$sigma21_twomeans, V2 = input$sigma22_twomeans, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dnorm(x, mean = 0, sd = 1)
@@ -1601,9 +1874,13 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == FALSE) {
-      dat1 <- extract(input$sample1_twomeanspaired)
-      dat2 <- extract(input$sample2_twomeanspaired)
-      test <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = TRUE)
+      if (input$input_type_twomeanspaired == "raw") {
+        dat1 <- extract(input$sample1_twomeanspaired)
+        dat2 <- extract(input$sample2_twomeanspaired)
+        test <- t.test(x = dat2, y = dat1, mu = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha, paired = TRUE)
+      } else {
+        test <- t_test1_sum(input$n_twomeanspaired_sum, input$dbar_twomeanspaired_sum, input$s2d_twomeanspaired_sum, input$h0, input$alpha, input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dt(x, df = test$parameter)
@@ -1635,9 +1912,13 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "two means (paired samples)" & input$popsd_twomeanspaired == TRUE) {
-      dat1 <- extract(input$sample1_twomeanspaired)
-      dat2 <- extract(input$sample2_twomeanspaired)
-      test <- t.test2(x = dat2 - dat1, V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      if (input$input_type_twomeanspaired == "raw") {
+        dat1 <- extract(input$sample1_twomeanspaired)
+        dat2 <- extract(input$sample2_twomeanspaired)
+        test <- t.test2(x = dat2 - dat1, V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      } else {
+        test <- t.test2(x = rep(input$dbar_twomeanspaired_sum, input$n_twomeanspaired_sum), V = input$sigma2_twomeanspaired, m0 = input$h0, alpha = input$alpha, alternative = input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dnorm(x, mean = 0, sd = 1)
@@ -1745,8 +2026,12 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "one variance") {
-      dat <- extract(input$sample_onevar)
-      test <- varTest(x = dat, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+      if (input$input_type_onevar == "raw") {
+        dat <- extract(input$sample_onevar)
+        test <- varTest(x = dat, sigma.squared = input$h0, alternative = input$alternative, conf.level = 1 - input$alpha)
+      } else {
+        test <- vartest_sum(input$n_onevar_sum, input$s2_onevar_sum, input$h0, input$alpha, input$alternative)
+      }
       if (input$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- dchisq(x, df = test$parameters)
@@ -1778,9 +2063,13 @@ server <- function(input, output) {
         xlab("x")
       p
     } else if (input$inference == "two variances") {
-      dat1 <- extract(input$sample1_twovar)
-      dat2 <- extract(input$sample2_twovar)
-      test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative_twovar, conf.level = 1 - input$alpha)
+      if (input$input_type_twovar == "raw") {
+        dat1 <- extract(input$sample1_twovar)
+        dat2 <- extract(input$sample2_twovar)
+        test <- var.test(x = dat1, y = dat2, ratio = 1, alternative = input$alternative_twovar, conf.level = 1 - input$alpha)
+      } else {
+        test <- ftest_sum(input$n1_twovar_sum, input$n2_twovar_sum, input$s21_twovar_sum, input$s22_twovar_sum, input$alpha, input$alternative_twovar)
+      }
       if (test$alternative == "two.sided") {
         funcShaded <- function(x) {
           y <- df(x, df1 = test$parameter[1], df2 = test$parameter[2])
