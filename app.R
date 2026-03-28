@@ -451,12 +451,17 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ",
-          round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr * sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(\\mu = \\bar{x} \\pm t_{\\alpha/2, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr * sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(\\mu = \\bar{x} - t_{\\alpha, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(\\mu = \\bar{x} + t_{\\alpha, n - 1} \\dfrac{s}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat)), 3), " / ", round(sqrt(length(dat)), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -566,12 +571,17 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(\\mu_D = \\bar{D} \\pm t_{\\alpha/2, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ",
-          round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr * sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(\\mu_D = \\bar{D} \\pm t_{\\alpha/2, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr * sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(\\mu_D = \\bar{D} - t_{\\alpha, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(\\mu_D = \\bar{D} + t_{\\alpha, n - 1} \\dfrac{s_D}{\\sqrt{n}} = \\) ", round(test$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr * sqrt(length(dat1)), 3), " / ", round(sqrt(length(dat1)), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -688,16 +698,22 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
-        paste0((1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, n_1 + n_2 - 2} (s_p) \\sqrt{\\dfrac{1}{n_1} + \\dfrac{1}{n_2}} \\)"),
+        paste0((1 - input$alpha) * 100, ifelse(input$alternative == "two.sided", "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, n_1 + n_2 - 2} (s_p) \\sqrt{\\dfrac{1}{n_1} + \\dfrac{1}{n_2}} \\)", ifelse(input$alternative == "greater", "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 - t_{\\alpha, n_1 + n_2 - 2} (s_p) \\sqrt{\\dfrac{1}{n_1} + \\dfrac{1}{n_2}} \\)", "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 + t_{\\alpha, n_1 + n_2 - 2} (s_p) \\sqrt{\\dfrac{1}{n_1} + \\dfrac{1}{n_2}} \\)"))),
         br(),
         paste0("where ", "\\( s_p = \\sqrt{\\dfrac{(n_1 - 1)s^2_1 + (n_2 - 1)s^2_2}{n_1 + n_2 - 2}} = \\) ", round(s_p, 3)),
         br(),
         br(),
         paste0(
-          "\\( \\Rightarrow \\)", (1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\) ", round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / length(dat1) + 1 / length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          "\\( \\Rightarrow \\)", (1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\) ",
+          ifelse(input$alternative == "two.sided",
+            paste0(round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / length(dat1) + 1 / length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( - \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / length(dat1) + 1 / length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( + \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(s_p, 3), " * ", round(sqrt(1 / length(dat1) + 1 / length(dat2)), 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -749,16 +765,22 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
-        paste0((1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, \\nu} \\sqrt{\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}} \\)"),
+        paste0((1 - input$alpha) * 100, ifelse(input$alternative == "two.sided", "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 \\pm t_{\\alpha/2, \\nu} \\sqrt{\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}} \\)", ifelse(input$alternative == "greater", "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 - t_{\\alpha, \\nu} \\sqrt{\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}} \\)", "% CI for \\(\\mu_1 - \\mu_2 = \\bar{x}_1 - \\bar{x}_2 + t_{\\alpha, \\nu} \\sqrt{\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}} \\)"))),
         br(),
         paste0("where ", "\\( \\nu = \\dfrac{\\Bigg(\\dfrac{s^2_1}{n_1} + \\dfrac{s^2_2}{n_2}\\Bigg)^2}{\\dfrac{\\Bigg(\\dfrac{s^2_1}{n_1}\\Bigg)^2}{n_1-1} + \\dfrac{\\Bigg(\\dfrac{s^2_2}{n_2}\\Bigg)^2}{n_2-1}} = \\) ", round(test$parameter, 3)),
         br(),
         br(),
         paste0(
-          "\\( \\Rightarrow \\)", (1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\) ", round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          "\\( \\Rightarrow \\)", (1 - input$alpha) * 100, "% CI for \\(\\mu_1 - \\mu_2 = \\) ",
+          ifelse(input$alternative == "two.sided",
+            paste0(round(test_confint$estimate[1], 3), ifelse(test_confint$estimate[2] >= 0, paste0(" - ", round(test_confint$estimate[2], 3)), paste0(" + ", round(abs(test_confint$estimate[2]), 3))), " \\( \\pm \\) ", "\\( (\\)", round(qt(input$alpha / 2, df = test_confint$parameter, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( - \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0(round(test$estimate[1], 3), ifelse(test$estimate[2] >= 0, paste0(" - ", round(test$estimate[2], 3)), paste0(" + ", round(abs(test$estimate[2]), 3))), " \\( + \\) ", "\\( (\\)", round(qt(input$alpha, df = test$parameter, lower.tail = FALSE), 3), " * ", round(test$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test$conf.int[2], 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -868,12 +890,17 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n\\widehat{p} \\geq 5\\) and \\( n(1-\\widehat{p}) \\geq 5\\)", ifelse(test$n * test$estimate >= 5 & test$n * (1 - test$estimate) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(p = \\widehat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ",
-          round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(p = \\widehat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(p = \\widehat{p} - z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p = \\widehat{p} + z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -918,12 +945,17 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n\\widehat{p} \\geq 5\\) and \\( n(1-\\widehat{p}) \\geq 5\\)", ifelse(test$n * test$estimate >= 5 & test$n * (1 - test$estimate) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(p = \\widehat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ",
-          round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(p = \\widehat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(p = \\widehat{p} - z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p = \\widehat{p} + z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -980,12 +1012,17 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\widehat{p}_1 \\geq 5\\), \\( n_1(1-\\widehat{p}_1) \\geq 5\\), \\( n_2\\widehat{p}_2 \\geq 5\\) and \\( n_2(1-\\widehat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ",
-          round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -1036,12 +1073,17 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\widehat{p}_1 \\geq 5\\), \\( n_1(1-\\widehat{p}_1) \\geq 5\\), \\( n_2\\widehat{p}_2 \\geq 5\\) and \\( n_2(1-\\widehat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ",
-          round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -1092,12 +1134,17 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\widehat{p}_1 \\geq 5\\), \\( n_1(1-\\widehat{p}_1) \\geq 5\\), \\( n_2\\widehat{p}_2 \\geq 5\\) and \\( n_2(1-\\widehat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ",
-          round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -1152,12 +1199,17 @@ server <- function(input, output) {
         helpText(paste0("Assumptions \\( n_1\\widehat{p}_1 \\geq 5\\), \\( n_1(1-\\widehat{p}_1) \\geq 5\\), \\( n_2\\widehat{p}_2 \\geq 5\\) and \\( n_2(1-\\widehat{p}_2) \\geq 5\\)", ifelse(test$n1 * test$estimate1 >= 5 & test$n1 * (1 - test$estimate1) >= 5 & test$n2 * test$estimate2 >= 5 & test$n2 * (1 - test$estimate2) >= 5, " are met.", " are not met."))),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ",
-          round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\dfrac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\dfrac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -1218,12 +1270,17 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ",
-          "[(", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = FALSE), 3), ") ; (", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = TRUE), 3), ")] = ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative == "two.sided",
+            paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ", "[(", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = FALSE), 3), ") ; (", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative == "greater",
+              paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha, n-1}} ; +\\infty \\Bigg) = \\) ", "[(", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3), ") ; +\\(\\infty\\)) = ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(\\sigma^2 = \\Bigg( 0 ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha, n-1}} \\Bigg] = \\) ", "(0 ; (", round((length(dat) - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[0; ", round(test$conf.int[2], 3), "]")
+            )
+          )
         ),
         br(),
         br(),
@@ -1302,12 +1359,17 @@ server <- function(input, output) {
         br(),
         br(),
         tags$b("Confidence interval"),
-        tags$em("(two-sided)"),
+        tags$em(ifelse(input$alternative_twovar == "two.sided", "(two-sided)", "(one-sided)")),
         br(),
         paste0(
-          (1 - input$alpha) * 100, "% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha/2, n_1 - 1, n_2-1} \\Bigg] = \\) ",
-          "\\( \\big[ \\)", round(test_confint$estimate, 3), " * (1 / ", round(qf(input$alpha / 2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "); ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha / 2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "\\( \\big] = \\) ",
-          "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"
+          (1 - input$alpha) * 100,
+          ifelse(input$alternative_twovar == "two.sided",
+            paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha/2, n_1 - 1, n_2-1} \\Bigg] = \\) ", "\\( \\big[ \\)", round(test_confint$estimate, 3), " * (1 / ", round(qf(input$alpha / 2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "); ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha / 2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "\\( \\big] = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            ifelse(input$alternative_twovar == "greater",
+              paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha, n_1 - 1, n_2-1}} ; +\\infty \\Bigg) = \\) ", "\\( \\big[ \\)", round(test_confint$estimate, 3), " * (1 / ", round(qf(input$alpha, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), ") ; \\(+\\infty\\)) = ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg( 0 ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha, n_1 - 1, n_2-1} \\Bigg] = \\) ", "(0 ; ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "] = ", "[0; ", round(test$conf.int[2], 3), "]")
+            )
+          )
         ),
         br(),
         br(),
