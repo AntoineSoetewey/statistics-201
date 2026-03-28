@@ -387,6 +387,7 @@ ui <- shiny::tagList(
 
 server <- function(input, output) {
   extract <- function(text) {
+    text <- gsub(";", ",", text)
     text <- gsub(" ", "", text)
     split <- strsplit(text, ",", fixed = FALSE)[[1]]
     as.numeric(split)
@@ -889,6 +890,7 @@ server <- function(input, output) {
       xbar1_val <- input$xbar1_twomeans_sum; xbar2_val <- input$xbar2_twomeans_sum
       s21_val <- input$s21_twomeans_sum; s22_val <- input$s22_twomeans_sum
       if (is.na(n1_val) | n1_val < 2 | is.na(n2_val) | n2_val < 2) return("Invalid input: n must be \u2265 2")
+      if (is.na(s21_val) | s21_val < 0 | is.na(s22_val) | s22_val < 0) return("Invalid input: s\u00b2 must be \u2265 0")
     }
 
     if (input$inference == "two means (independent samples)" & input$popsd_twomeans == FALSE & input$var.equal == TRUE) {
@@ -1129,8 +1131,8 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided",
             paste0("% CI for \\(p = \\widehat{p} \\pm z_{\\alpha/2} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(p = \\widehat{p} - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(p = \\widehat{p} + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+              paste0("% CI for \\(p = \\widehat{p} - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$estimate - qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p = \\widehat{p} + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test_confint$estimate + qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
             )
           )
         ),
@@ -1161,6 +1163,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test2$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test2$null.value, " \\((p\\)-value ", ifelse(test2$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test2$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "one proportion" & input$propx_oneprop == "prop_false") {
+      if (input$x_oneprop > input$n_oneprop) return("Invalid input: number of successes cannot exceed sample size")
       test <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       test2 <- prop.z.test3(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       test_confint <- prop.z.test(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided")
@@ -1184,8 +1187,8 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided",
             paste0("% CI for \\(p = \\widehat{p} \\pm z_{\\alpha/2} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(p = \\widehat{p} - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(p = \\widehat{p} + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+              paste0("% CI for \\(p = \\widehat{p} - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$estimate - qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p = \\widehat{p} + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}(1-\\widehat{p})}{n}} = \\) ", round(test_confint$estimate, 3), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(test_confint$estimate + qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
             )
           )
         ),
@@ -1251,8 +1254,8 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided",
             paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round((test_confint$estimate1 - test_confint$estimate2) - qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round((test_confint$estimate1 - test_confint$estimate2) + qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
             )
           )
         ),
@@ -1283,6 +1286,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in proportions is ", "we do not reject the null hypothesis that the true difference in proportions is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "two proportions" & input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == FALSE) {
+      if (input$x1_twoprop > input$n1_twoprop | input$x2_twoprop > input$n2_twoprop) return("Invalid input: number of successes cannot exceed sample size")
       test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = FALSE)
       test_confint <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided", pooled.stderr = FALSE)
       withMathJax(
@@ -1312,8 +1316,8 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided",
             paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round((test_confint$estimate1 - test_confint$estimate2) - qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round((test_confint$estimate1 - test_confint$estimate2) + qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
             )
           )
         ),
@@ -1373,8 +1377,8 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided",
             paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round((test_confint$estimate1 - test_confint$estimate2) - qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round((test_confint$estimate1 - test_confint$estimate2) + qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
             )
           )
         ),
@@ -1409,6 +1413,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in proportions is ", "we do not reject the null hypothesis that the true difference in proportions is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else if (input$inference == "two proportions" & input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == TRUE) {
+      if (input$x1_twoprop > input$n1_twoprop | input$x2_twoprop > input$n2_twoprop) return("Invalid input: number of successes cannot exceed sample size")
       test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = TRUE)
       test_confint <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = "two.sided", pooled.stderr = FALSE)
       withMathJax(
@@ -1438,8 +1443,8 @@ server <- function(input, output) {
           ifelse(input$alternative == "two.sided",
             paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 \\pm z_{\\alpha/2} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( \\pm \\) ", "\\( ( \\)", round(qnorm(input$alpha / 2, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round(-qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round(qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 - z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( - \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "[", round((test_confint$estimate1 - test_confint$estimate2) - qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "; \\(+\\infty\\))"),
+              paste0("% CI for \\(p_1 - p_2 = \\widehat{p}_1 - \\widehat{p}_2 + z_{\\alpha} \\sqrt{\\frac{\\widehat{p}_1(1-\\widehat{p}_1)}{n_1} + \\frac{\\widehat{p}_2(1-\\widehat{p}_2)}{n_2}} = \\) ", round(test_confint$estimate1, 3), ifelse(test_confint$estimate2 >= 0, paste0(" - ", round(test_confint$estimate2, 3)), paste0(" + ", round(abs(test_confint$estimate2), 3))), "  \\( + \\) ", "\\( ( \\)", round(qnorm(input$alpha, lower.tail = FALSE), 3), " * ", round(test_confint$stderr, 3), "\\( ) \\) ", "\\( = \\) ", "(-\\(\\infty\\); ", round((test_confint$estimate1 - test_confint$estimate2) + qnorm(input$alpha, lower.tail = FALSE) * test_confint$stderr, 3), "]")
             )
           )
         ),
@@ -1953,6 +1958,7 @@ server <- function(input, output) {
       if (input$propx_oneprop == "prop_true") {
         test <- prop.z.test3(x = input$n_oneprop * input$p_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       } else {
+        if (input$x_oneprop > input$n_oneprop) return(NULL)
         test <- prop.z.test3(x = input$x_oneprop, n = input$n_oneprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative)
       }
       if (input$alternative == "two.sided") {
@@ -1989,10 +1995,12 @@ server <- function(input, output) {
       if (input$propx_twoprop == "prop_true" & input$pooledstderr_twoprop == FALSE) {
         test <- prop.z.test2(x1 = input$n1_twoprop * input$p1_twoprop, x2 = input$n2_twoprop * input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = FALSE)
       } else if (input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == FALSE) {
+        if (input$x1_twoprop > input$n1_twoprop | input$x2_twoprop > input$n2_twoprop) return(NULL)
         test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = FALSE)
       } else if (input$propx_twoprop == "prop_true" & input$pooledstderr_twoprop == TRUE) {
         test <- prop.z.test2(x1 = input$n1_twoprop * input$p1_twoprop, x2 = input$n2_twoprop * input$p2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = TRUE)
       } else if (input$propx_twoprop == "prop_false" & input$pooledstderr_twoprop == TRUE) {
+        if (input$x1_twoprop > input$n1_twoprop | input$x2_twoprop > input$n2_twoprop) return(NULL)
         test <- prop.z.test2(x1 = input$x1_twoprop, x2 = input$x2_twoprop, n1 = input$n1_twoprop, n2 = input$n2_twoprop, p0 = input$h0, conf.level = 1 - input$alpha, alternative = input$alternative, pooled.stderr = TRUE)
       }
       if (input$alternative == "two.sided") {
