@@ -21,16 +21,8 @@ ui <- shiny::tagList(
       class = "app_title", 
       
       titlePanel(
-        title = "Statistics 201 - Inference", 
+        title = "Statistics 201 - Inference",
         windowTitle = "Inference"
-      ),
-      
-      tags$h4(
-        tags$a(
-          href = "https://antoinesoetewey.com/", 
-          target = "_blank", 
-          "Antoine Soetewey"
-        )
       )
     ),
     
