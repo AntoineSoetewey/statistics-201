@@ -2,10 +2,6 @@ body {
     font-size: 20px;
 }
 
-.help-block {
-    font-size: 20px !important;
-}
-
 .app_title {
     display: flex;
     flex-direction: column;
@@ -31,4 +27,12 @@ body {
     color: white;
     padding: 3%;
     margin-top: 4%;
+}
+
+.footer_container a {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.footer_container a:hover {
+    color: white;
 }

@@ -152,7 +152,6 @@ ui <- shiny::tagList(
           ),
           conditionalPanel(
             condition = "input.inference == 'one proportion'",
-            tags$b("Sample size"),
             numericInput("n_oneprop", "\\(n = \\)",
                          value = 30, min = 0, step = 1
             ),
@@ -167,14 +166,12 @@ ui <- shiny::tagList(
             ),
             conditionalPanel(
               condition = "input.propx_oneprop == 'prop_true'",
-              tags$b("Proportion of success"),
               numericInput("p_oneprop", "\\(\\widehat{p} = \\)",
                            value = 0.2, min = 0, max = 1, step = 0.01
               )
             ),
             conditionalPanel(
               condition = "input.propx_oneprop == 'prop_false'",
-              tags$b("Number of successes"),
               numericInput("x_oneprop", "\\(x = \\)",
                            value = 10, min = 0, step = 1
               )
@@ -182,11 +179,9 @@ ui <- shiny::tagList(
           ),
           conditionalPanel(
             condition = "input.inference == 'two proportions'",
-            tags$b("Sample size 1"),
             numericInput("n1_twoprop", "\\(n_1 = \\)",
                          value = 30, min = 0, step = 1
             ),
-            tags$b("Sample size 2"),
             numericInput("n2_twoprop", "\\(n_2 = \\)",
                          value = 30, min = 0, step = 1
             ),
@@ -201,7 +196,6 @@ ui <- shiny::tagList(
             ),
             conditionalPanel(
               condition = "input.propx_twoprop == 'prop_true'",
-              tags$b("Proportion of success"),
               numericInput("p1_twoprop", "\\(\\widehat{p}_1 = \\)",
                            value = 0.2, min = 0, max = 1, step = 0.01
               ),
@@ -211,7 +205,6 @@ ui <- shiny::tagList(
             ),
             conditionalPanel(
               condition = "input.propx_twoprop == 'prop_false'",
-              tags$b("Number of successes"),
               numericInput("x1_twoprop", "\\(x_1 = \\)",
                            value = 10, min = 0, step = 1
               ),
