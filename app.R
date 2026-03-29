@@ -4,7 +4,7 @@ library(EnvStats)
 
 options(shiny.mathjax.config = "config=TeX-AMS-MML_SVG")
 
-# Define UI for application that draws a histogram
+# Define UI for statistical inference application
 ui <- shiny::tagList(
   withMathJax(), 
   includeCSS(path = "www/css/styles.css"), 
@@ -110,7 +110,7 @@ ui <- shiny::tagList(
                 )
               )
             ),
-            checkboxInput("popsd_twomeans", "Variance of the populations are known", FALSE),
+            checkboxInput("popsd_twomeans", "Variances of the populations are known", FALSE),
             conditionalPanel(
               condition = "input.popsd_twomeans == 1",
               numericInput("sigma21_twomeans", "\\(\\sigma^2_1 = \\)",
@@ -153,7 +153,7 @@ ui <- shiny::tagList(
           conditionalPanel(
             condition = "input.inference == 'one proportion'",
             numericInput("n_oneprop", "\\(n = \\)",
-                         value = 30, min = 0, step = 1
+                         value = 30, min = 1, step = 1
             ),
             hr(),
             radioButtons(
@@ -180,10 +180,10 @@ ui <- shiny::tagList(
           conditionalPanel(
             condition = "input.inference == 'two proportions'",
             numericInput("n1_twoprop", "\\(n_1 = \\)",
-                         value = 30, min = 0, step = 1
+                         value = 30, min = 1, step = 1
             ),
             numericInput("n2_twoprop", "\\(n_2 = \\)",
-                         value = 30, min = 0, step = 1
+                         value = 30, min = 1, step = 1
             ),
             hr(),
             radioButtons(
@@ -382,7 +382,7 @@ server <- function(input, output) {
   extract <- function(text) {
     text <- gsub(";", ",", text)
     text <- gsub(" ", "", text)
-    split <- strsplit(text, ",", fixed = FALSE)[[1]]
+    split <- strsplit(text, ",", fixed = TRUE)[[1]]
     as.numeric(split)
   }
   t.test2 <- function(x, V, m0 = 0, alpha = 0.05, alternative = "two.sided") {
@@ -398,15 +398,9 @@ server <- function(input, output) {
     } else {
       pnorm(statistic, lower.tail = FALSE)
     }
-    # p <- (1 - pnorm((M-m0)/S))
     LCL <- (M - S * qnorm(1 - alpha / 2))
     UCL <- (M + S * qnorm(1 - alpha / 2))
     value <- list(mean = M, m0 = m0, sigma = sigma, statistic = statistic, p.value = p, LCL = LCL, UCL = UCL, alternative = alternative)
-    # print(sprintf("P-value = %g",p))
-    # print(sprintf("Lower %.2f%% Confidence Limit = %g",
-    #               alpha, LCL))
-    # print(sprintf("Upper %.2f%% Confidence Limit = %g",
-    #               alpha, UCL))
     return(value)
   }
   t.test3 <- function(x, y, V1, V2, m0 = 0, alpha = 0.05, alternative = "two.sided") {
@@ -425,15 +419,9 @@ server <- function(input, output) {
     } else {
       pnorm(statistic, lower.tail = FALSE)
     }
-    # p <- (1 - pnorm((M-m0)/S))
     LCL <- (M1 - M2 - S * qnorm(1 - alpha / 2))
     UCL <- (M1 - M2 + S * qnorm(1 - alpha / 2))
     value <- list(mean1 = M1, mean2 = M2, m0 = m0, sigma1 = sigma1, sigma2 = sigma2, S = S, statistic = statistic, p.value = p, LCL = LCL, UCL = UCL, alternative = alternative)
-    # print(sprintf("P-value = %g",p))
-    # print(sprintf("Lower %.2f%% Confidence Limit = %g",
-    #               alpha, LCL))
-    # print(sprintf("Upper %.2f%% Confidence Limit = %g",
-    #               alpha, UCL))
     return(value)
   }
   prop.z.test <- function(x, n, p0 = 0.5, conf.level = 0.95, alternative = "two.sided") {
@@ -580,11 +568,13 @@ server <- function(input, output) {
     } else {
       pf(F_stat, df1 = df1, df2 = df2, lower.tail = TRUE)
     }
-    f_two <- qf(alpha / 2, df1 = df1, df2 = df2, lower.tail = FALSE)
+    f_upper <- qf(alpha / 2, df1 = df1, df2 = df2, lower.tail = FALSE)
+    f_upper_rev <- qf(alpha / 2, df1 = df2, df2 = df1, lower.tail = FALSE)
     f_one <- qf(alpha, df1 = df1, df2 = df2, lower.tail = FALSE)
-    ci <- if (alternative == "two.sided") c(F_stat / f_two, F_stat * f_two)
+    f_one_rev <- qf(alpha, df1 = df2, df2 = df1, lower.tail = FALSE)
+    ci <- if (alternative == "two.sided") c(F_stat / f_upper, F_stat * f_upper_rev)
           else if (alternative == "greater") c(F_stat / f_one, Inf)
-          else c(0, F_stat * f_one)
+          else c(0, F_stat * f_one_rev)
     list(estimate = F_stat, null.value = 1, statistic = F_stat,
          parameter = c(df1, df2), p.value = p_val, conf.int = ci, alternative = alternative)
   }
@@ -719,7 +709,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean is ", "we do not reject the null hypothesis that the true mean is "), input$h0, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 
@@ -866,7 +856,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true mean of the difference is equal to ", "we do not reject the null hypothesis that the true mean of the difference is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 
@@ -1095,7 +1085,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in means is ", "we do not reject the null hypothesis that the true difference in means is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 
@@ -1212,7 +1202,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test2$p.value < input$alpha, "we reject the null hypothesis that the true proportion is ", "we do not reject the null hypothesis that the true proportion is "), test2$null.value, " \\((p\\)-value ", ifelse(test2$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test2$p.value, 3))), ")", ".")
       )
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 
@@ -1472,7 +1462,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true difference in proportions is ", "we do not reject the null hypothesis that the true difference in proportions is "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 
@@ -1522,7 +1512,7 @@ server <- function(input, output) {
             paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha/2, n-1}} ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha/2, n-1}} \\Bigg] = \\) ", "[(", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = FALSE), 3), ") ; (", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha / 2, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative == "greater",
               paste0("% CI for \\(\\sigma^2 = \\Bigg[ \\dfrac{(n-1)s^2}{\\chi^2_{\\alpha, n-1}} ; +\\infty \\Bigg) = \\) ", "[(", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = FALSE), 3), ") ; +\\(\\infty\\)) = ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\(\\sigma^2 = \\Bigg( 0 ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha, n-1}} \\Bigg] = \\) ", "(0 ; (", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "[0; ", round(test$conf.int[2], 3), "]")
+              paste0("% CI for \\(\\sigma^2 = \\Bigg( 0 ; \\dfrac{(n-1)s^2}{\\chi^2_{1-\\alpha, n-1}} \\Bigg] = \\) ", "(0 ; (", round((n_val - 1) * test$estimate, 3), " / ", round(qchisq(input$alpha, df = test$parameters, lower.tail = TRUE), 3), ")] = ", "(0; ", round(test$conf.int[2], 3), "]")
             )
           )
         ),
@@ -1566,7 +1556,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true variance is equal to ", "we do not reject the null hypothesis that the true variance is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 
@@ -1617,10 +1607,10 @@ server <- function(input, output) {
         paste0(
           (1 - input$alpha) * 100,
           ifelse(input$alternative_twovar == "two.sided",
-            paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha/2, n_1 - 1, n_2-1} \\Bigg] = \\) ", "\\( \\big[ \\)", round(test_confint$estimate, 3), " * (1 / ", round(qf(input$alpha / 2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "); ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha / 2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "\\( \\big] = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
+            paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha/2, n_1 - 1, n_2-1}} ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha/2, n_2 - 1, n_1-1} \\Bigg] = \\) ", "\\( \\big[ \\)", round(test_confint$estimate, 3), " * (1 / ", round(qf(input$alpha / 2, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "); ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha / 2, df1 = test_confint$parameter[2], df2 = test_confint$parameter[1], lower.tail = FALSE), 3), "\\( \\big] = \\) ", "[", round(test_confint$conf.int[1], 3), "; ", round(test_confint$conf.int[2], 3), "]"),
             ifelse(input$alternative_twovar == "greater",
               paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg[ \\dfrac{s^2_1}{s^2_2}\\dfrac{1}{F_{\\alpha, n_1 - 1, n_2-1}} ; +\\infty \\Bigg) = \\) ", "\\( \\big[ \\)", round(test_confint$estimate, 3), " * (1 / ", round(qf(input$alpha, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), ") ; \\(+\\infty\\)) = ", "[", round(test$conf.int[1], 3), "; \\(+\\infty\\))"),
-              paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg( 0 ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha, n_1 - 1, n_2-1} \\Bigg] = \\) ", "(0 ; ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha, df1 = test_confint$parameter[1], df2 = test_confint$parameter[2], lower.tail = FALSE), 3), "] = ", "[0; ", round(test$conf.int[2], 3), "]")
+              paste0("% CI for \\( \\dfrac{\\sigma^2_1}{\\sigma^2_2} = \\Bigg( 0 ; \\dfrac{s^2_1}{s^2_2}F_{\\alpha, n_2 - 1, n_1-1} \\Bigg] = \\) ", "(0 ; ", round(test_confint$estimate, 3), " * ", round(qf(input$alpha, df1 = test_confint$parameter[2], df2 = test_confint$parameter[1], lower.tail = FALSE), 3), "] = ", "(0; ", round(test$conf.int[2], 3), "]")
             )
           )
         ),
@@ -1678,7 +1668,7 @@ server <- function(input, output) {
         paste0("At the ", input$alpha * 100, "% significance level, ", ifelse(test$p.value < input$alpha, "we reject the null hypothesis that the true ratio of variances is equal to ", "we do not reject the null hypothesis that the true ratio of variances is equal to "), test$null.value, " \\((p\\)-value ", ifelse(test$p.value < 0.001, "< 0.001", paste0("\\(=\\) ", round(test$p.value, 3))), ")", ".")
       )
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 
@@ -2102,7 +2092,7 @@ server <- function(input, output) {
         xlab("x")
       p
     } else {
-      print("loading...")
+      "loading..."
     }
   })
 }
