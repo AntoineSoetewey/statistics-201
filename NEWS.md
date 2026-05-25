@@ -1,5 +1,9 @@
 # statistics-201 NEWS
 
+## v1.0.1 (2026-05-26)
+
+- Fix "could not find function" error by explicitly sourcing global.R in app.R
+
 ## v1.0.0 (2026-05-26)
 
 First release, incorporating changes from the JOSE peer review.
