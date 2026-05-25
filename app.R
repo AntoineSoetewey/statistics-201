@@ -2,6 +2,8 @@ library(shiny)
 library(ggplot2)
 library(EnvStats)
 
+source("global.R")
+
 options(shiny.mathjax.config = "config=TeX-AMS-MML_SVG")
 
 # Define UI for statistical inference application
