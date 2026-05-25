@@ -316,6 +316,18 @@ ui <- shiny::tagList(
                       max = 0.20,
                       value = 0.05
           ),
+          hr(),
+          tags$p(
+            tags$small(
+              "New to inferential statistics? See ",
+              tags$a(
+                "this guide",
+                href = "https://statsandr.com/blog/a-shiny-app-for-inferential-statistics-by-hand/",
+                target = "_blank"
+              ),
+              " for help on how to read this app."
+            )
+          )
         ),
         
         mainPanel(
