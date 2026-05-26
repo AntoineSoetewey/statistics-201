@@ -1,5 +1,9 @@
 # statistics-201 NEWS
 
+## v1.0.2 (2026-05-26)
+
+- Rewrite unit tests to focus on app-specific logic rather than base R functions
+
 ## v1.0.1 (2026-05-26)
 
 - Fix "could not find function" error by explicitly sourcing global.R in app.R
@@ -8,5 +12,5 @@
 
 First release, incorporating changes from the JOSE peer review.
 
-- Improved output formatting by adding horizontal rule separators between sections (#8)
-- Extracted helper functions to global.R and added unit tests (#12)
+- Improved output formatting by adding horizontal rule separators between sections
+- Extracted helper functions to global.R and added unit tests
