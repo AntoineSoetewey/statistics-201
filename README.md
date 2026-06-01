@@ -54,6 +54,14 @@ install.packages(c("shiny", "shinythemes", "ggplot2", "EnvStats"))
 
 ## Running the app locally
 
+**Option 1 — Run directly from GitHub (no cloning needed):**
+
+```r
+shiny::runGitHub("statistics-201", "AntoineSoetewey")
+```
+
+**Option 2 — Run from a local clone:**
+
 1. Clone or download this repository.
 2. Open `statistics-201.Rproj` in RStudio, or set the repository root as your working directory in R.
 3. Install the dependencies listed above if needed.
